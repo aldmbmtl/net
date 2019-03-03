@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """The setup script."""
-
+import versioneer
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -33,7 +33,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    description="Python program comunication interfacee",
+    description="Python program communication interface",
     entry_points={
         'console_scripts': [
             'net=net.cli:main',
@@ -50,6 +50,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/aldmbmtl/net',
-    version='0.1.0',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     zip_safe=False,
 )
