@@ -19,4 +19,3 @@ deploy:
 
 os:
   - linux
-  - osx
