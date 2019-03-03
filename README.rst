@@ -20,8 +20,7 @@ net
 
 
 
-Python program comunication interfacee
-
+Python program communication interface.
 
 * Free software: MIT license
 * Documentation: https://net.readthedocs.io.
