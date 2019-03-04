@@ -103,6 +103,3 @@ def Peer():
         SINGLETON = _peer()
 
     return SINGLETON
-
-
-Peer()
