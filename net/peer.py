@@ -27,7 +27,7 @@ class PeerHandler(socketserver.BaseRequestHandler):
 
 
 # noinspection PyPep8Naming
-class _peer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class _peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # adding in object for 2.7 support
     def __init__(self):
         # mask with singleton catch
         if SINGLETON:
@@ -103,3 +103,6 @@ def Peer():
         SINGLETON = _peer()
 
     return SINGLETON
+
+
+Peer()
