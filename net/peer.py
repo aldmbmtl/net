@@ -1,45 +1,52 @@
 # -*- coding: utf-8 -*-
+
 # std imports
 import os
 import socket
 from logging import debug
 
-# python version handling
-try:
-    # python 2
-    import SocketServer as socketserver
-    from socket import error as ConnectionRefusedError
-except ImportError:
-    # python 3
-    import socketserver
-
 # third party
 import termcolor
+
+# package imports
+from handler import PeerHandler
+from imports import socketserver, ConnectionRefusedError
 
 
 # globals
 SINGLETON = None
 
 
-class PeerHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        pass
+class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # adding in object for 2.7 support
+    def __init__(self, test=False):
 
-
-# noinspection PyPep8Naming
-class _peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # adding in object for 2.7 support
-    def __init__(self):
-        # mask with singleton catch
-        if SINGLETON:
+        # mask with singleton catch unless being tested
+        if SINGLETON and not test:
             raise RuntimeError(
                 "Can not create a new peer in without shutting down the previous one. Please use net.Peer() instead."
             )
 
         # find port
-        self.port = self.scan_for_port()
-        self.host = 'localhost'
+        self._port = self.scan_for_port()
+        self._host = 'localhost'
 
-        super(_peer, self).__init__((self.host, self.port), PeerHandler)
+        super(_Peer, self).__init__((self.host, self.port), PeerHandler)
+
+    @property
+    def port(self):
+        """
+        Port that the peer is running on.
+        :return:
+        """
+        return self._port
+
+    @property
+    def host(self):
+        """
+        Host that the peer is running on.
+        :return:
+        """
+        return self._host
 
     @staticmethod
     def ping(port, host='localhost'):
@@ -91,7 +98,7 @@ class _peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         return port
 
 
-def Peer():
+def Peer(test=False):
     """
     Running Peer server for this instance of python.
     :return: _peer
@@ -100,6 +107,6 @@ def Peer():
 
     # handle singleton behavior
     if not SINGLETON:
-        SINGLETON = _peer()
+        SINGLETON = _Peer()
 
     return SINGLETON
