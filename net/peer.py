@@ -9,8 +9,8 @@ from logging import debug
 import termcolor
 
 # package imports
-from handler import PeerHandler
-from imports import socketserver, ConnectionRefusedError
+from net import PeerHandler
+from .imports import socketserver, ConnectionRefusedError
 
 
 # globals

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """The setup script."""
-import versioneer
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -43,14 +42,13 @@ setup(
     license="MIT license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='net',
-    name='net',
+    keywords='app-net',
+    name='app-net',
     packages=find_packages(include=['net']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/aldmbmtl/net',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    version='0.1.0',
     zip_safe=False,
 )

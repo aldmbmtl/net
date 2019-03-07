@@ -1,1 +1,1 @@
-net/_version.py export-subst
+src/net/_version.py export-subst

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python 2/3 imports
-from imports import socketserver
+from .imports import socketserver
 
 
 HANDLERS = {}
