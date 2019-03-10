@@ -1,2 +1,2 @@
-termcolor
 click==7.0
+termcolor
