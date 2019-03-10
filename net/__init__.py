@@ -16,6 +16,6 @@ __version__ = '0.1.0'
 
 __all__ = ['connect', 'Peer']
 
-from .peer import Peer
-from .connect import connect
+from .peer import *
+from .connect import *
 from .defaults import *

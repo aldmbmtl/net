@@ -3,6 +3,11 @@
 python 2/3 imports handled here
 """
 
+__all__ = [
+    'socketserver',
+    'ConnectionRefusedError'
+]
+
 # python version handling
 try:
     # python 2

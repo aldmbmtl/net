@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
+__all__ = [
+    'Peer'
+]
+
 # std imports
 import re
 import os
 import sys
-import json
 import socket
 import base64
 import threading

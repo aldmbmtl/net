@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
+__all__ = [
+    'PeerHandler',
+]
+
 # std imports
 import json
 import base64
 import traceback
 from logging import error
-from . import peer
 
 # python 2/3 imports
 from .imports import socketserver
