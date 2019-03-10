@@ -29,7 +29,6 @@ SINGLETON = None
 class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # adding in object for 2.7 support
 
     CONNECTIONS = {}
-    REMOTE_CONNECTIONS = {}
     ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<app>.+)")
 
     @staticmethod
@@ -137,24 +136,38 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         return cls.register_connection(connection)
 
     @classmethod
-    def register_connection(cls, connection):
+    def register_connection(cls, connection, payload):
         """
         Registers a connection with the global handler.
         Do not use this directly. Instead use the net.connect decorator.
 
-        @net.connect
-        def your_function():
-            ...
+        my_payload = net.payload(
+            argument1=True,  <- required
+            argument2=False  <- not required
+        )
 
+        @net.connect(my_payload)
+        def your_function(payload):
+            arg1 = payload['argument1']
+            ...do something
+
+        @net.connect(my_payload)
+        def your_next_function(payload):
+            arg1 = payload['argument1']
+            ...do something
+
+        :param payload: payload
         :param connection: function
         :return:
         """
         connections_name = cls.build_connection_name(connection)
 
-        if connections_name not in cls.CONNECTIONS or cls.CONNECTIONS[connections_name] is not connection:
-            cls.CONNECTIONS[connections_name] = connection
+        # add the connection to the connection registry.
+        if connections_name in cls.CONNECTIONS:
+            warning("Redefining a handler. Be aware, this could cause unexpected results.")
+        cls.CONNECTIONS[connections_name] = (connection, payload)
 
-        return cls.CONNECTIONS[connections_name]
+        return connections_name
 
     def __init__(self, launch=True, test=False):
 
@@ -165,7 +178,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
             )
 
         # find port
-        self._host = "localhost"
+        self._host = socket.gethostname()
         self._port = self.scan_for_port()
 
         # handle threading
@@ -220,12 +233,11 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         """
         self._thread.start()
 
-    def request(self, peer, target=None, *args, **kwargs):
+    def request(self, peer, connection, **kwargs):
         """
         Request an action and response from a peer.
         :param peer: base64 encoded peer id
-        :param target: the target connection id to run
-        :param args: positional arguments to pass to the target connection (must be json compatible)
+        :param connection: the target connection id to run
         :param kwargs: keyword arguments to pass to the target connection (must be json compatible)
         :return:
         """
@@ -235,12 +247,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
             peer = (expr['host'], expr['port'])
 
         # package up the request
-        payload = {
-            'payload': 'none',
-            'message': None,
-            'args': args,
-            'kwargs': kwargs
-        }
+        payload = {'connection': connection, 'kwargs': kwargs}
 
         # socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -254,10 +261,11 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         response = PeerHandler.decode(raw)
 
 
+# noinspection PyPep8Naming
 def Peer(*args, **kwargs):
     """
     Running Peer server for this instance of python.
-    :return: _peer
+    :return: _Peer
     """
     global SINGLETON
 

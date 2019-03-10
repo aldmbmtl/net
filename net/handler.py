@@ -50,7 +50,7 @@ class PeerHandler(socketserver.BaseRequestHandler):
         :param payload:
         :return:
         """
-        print(payload['payload'])
+        payload['payload']
 
     @classmethod
     def decode(cls, byte_string):
