@@ -4,7 +4,7 @@ net
 
 
 .. image:: https://img.shields.io/pypi/v/net.svg
-        :target: https://pypi.python.org/pypi/net
+        :target: https://pypi.python.org/pypi/app-net
 
 .. image:: https://img.shields.io/travis/aldmbmtl/net.svg
         :target: https://travis-ci.org/aldmbmtl/net
