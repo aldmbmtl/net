@@ -19,6 +19,11 @@ net
      :alt: Updates
 
 
+.. image:: https://pyup.io/repos/github/aldmbmtl/net/python-3-shield.svg
+     :target: https://pyup.io/repos/github/aldmbmtl/net/
+     :alt: Python 3
+
+
 
 Python program communication interface.
 
