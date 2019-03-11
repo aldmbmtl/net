@@ -5,10 +5,12 @@ from net import connect
 
 
 @connect
-def info(peer, *args, **kwargs):
+def info(request, *args, **kwargs):
     """
     Return information about the peer requested.
     :return:
     """
-    print(peer.friendly_id)
-    return args, kwargs
+    return request.encode(
+        request.server.id,
+        request.server.friendly_id
+    )

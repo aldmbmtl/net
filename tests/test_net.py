@@ -3,8 +3,14 @@
 from __future__ import print_function
 
 """Tests for `net` package."""
+
+# std imports
+from logging import info
+
+# testing
 import pytest
 
+# package
 import net
 
 
@@ -14,7 +20,8 @@ def peers():
     Set up the peers for testing.
     """
     master = net.Peer()
-    yield master, master.__class__(test=True)
+    slave = master.__class__(test=True)
+    yield master, slave
 
 
 def test_peer_construct(peers):
@@ -22,13 +29,41 @@ def test_peer_construct(peers):
     Construct and connect 2 peer servers.
     """
     master, slave = peers
+
     assert master.port != slave.port
     assert slave.ping(master.port, master.host) is True
     assert master.ping(slave.port, slave.host) is True
 
 
-def test_connect_decorator():
+def test_connect_decorator(peers):
     """
     Test the connect decorator
     """
-    pass
+    master, slave = peers
+
+    assert net.info(peer=slave.id) != master.friendly_id
+
+
+def test_flag_decorator(peers):
+    """
+    Test the connect decorator
+    """
+    master, slave = peers
+
+    # define the testing connection handler
+    @net.connect
+    def test_response_handler(peer):
+        flag = peer.server.get_flag("TEST")
+        return flag
+
+    # should throw an error since the flag is not defined yet
+    with pytest.raises(Exception):
+        test_response_handler(peer=slave.id)
+
+    # define the missing flag
+    @net.flag("TEST")
+    def test_flag(this_peer, connection, peer):
+        return "TEST"
+
+    # flag is defined and should not fail
+    assert test_response_handler(peer=slave.id) == "TEST"

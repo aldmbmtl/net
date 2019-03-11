@@ -37,6 +37,6 @@ def invalid_connection(this_peer, connection, peer):
             peer[0],
             peer[1],
             connection,
-            str(base64.b64decode(connection), 'ascii')
+            base64.b64decode(connection).decode('ascii')
         )
     )

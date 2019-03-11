@@ -76,7 +76,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         :param id:
         :return:
         """
-        expr = cls.ID_REGEX.fullmatch(base64.b64decode(id).decode('ascii'))
+        expr = cls.ID_REGEX.match(base64.b64decode(id).decode('ascii')).groupdict()
 
         return {
             'app': expr['app'],
@@ -291,7 +291,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         if raw in self.FLAGS:
             terminate = self.FLAGS[raw](self, connection, peer)
             if terminate:
-                return
+                return terminate
 
         # decode and return final response
         return PeerHandler.decode(raw)

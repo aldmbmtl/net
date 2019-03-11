@@ -5,7 +5,7 @@ __all__ = [
 ]
 
 # package imports
-from .peer import Peer
+from .peer import _Peer
 
 
 def flag(name):
@@ -18,10 +18,8 @@ def flag(name):
         def handler(*args, **kwargs):
             return func(*args, **kwargs)
 
-        peer = Peer()
-
         # register the function with the peer handler
-        peer.register_flag(name, handler)
+        _Peer.register_flag(name, handler)
 
         return handler
     return registry

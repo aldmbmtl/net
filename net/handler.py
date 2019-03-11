@@ -26,9 +26,10 @@ class PeerHandler(socketserver.BaseRequestHandler):
         :return:
         """
         try:
-            payload = json.loads(str(base64.b64decode(byte_string), 'ascii'))
+            payload = json.loads(base64.b64decode(byte_string))
             return payload
-        except json.decoder.JSONDecodeError:
+        except Exception as e:
+            error(e)
             return byte_string
 
     @classmethod
@@ -41,7 +42,7 @@ class PeerHandler(socketserver.BaseRequestHandler):
         """
         # tag with the peer
         obj['peer'] = str(peer_id)
-        return base64.b64encode(bytes(json.dumps(obj), 'ascii'))
+        return base64.b64encode(json.dumps(obj).encode('ascii'))
 
     # noinspection PyPep8Naming
     def handle(self):
@@ -77,10 +78,11 @@ class PeerHandler(socketserver.BaseRequestHandler):
                 self.request.sendall(INVALID_CONNECTION)
                 return
 
-            # execute the connection handler
-            print(connection(self.server, *data['args'], **data['kwargs']))
+            # execute the connection handler and send back
+            response = connection(self, *data['args'], **data['kwargs'])
+            self.request.sendall(response)
 
-        except (json.decoder.JSONDecodeError, TypeError) as e:
+        except Exception as e:
             error(e)
             packet = {
                 'payload': 'error',
