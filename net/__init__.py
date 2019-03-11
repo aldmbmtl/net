@@ -17,5 +17,6 @@ __version__ = '0.1.0'
 __all__ = ['connect', 'Peer']
 
 from .peer import *
+from .flag import *
 from .connect import *
 from .defaults import *

@@ -18,40 +18,6 @@ class PeerHandler(socketserver.BaseRequestHandler):
     """
     Handles all incoming requests to the applications Peer server. Do not modify or interact with directly.
     """
-
-    CONNECTION_PAYLOADS = {}
-
-    @classmethod
-    def payloads(cls):
-        return cls.CONNECTION_PAYLOADS
-
-    @classmethod
-    def register_connection_payload(cls, name, template):
-        """
-        Register a type of connection payload. This defines the data payload contract between peers. If you would like
-        to create a new type of connection payload, you must define the template of the payload so if can be verified
-        before attempting delivery or execution.
-
-        :param name: connection payload name. This is store in the PeerHandler.types["my_type"]
-        :param template: dict
-        :return:
-        """
-        if name in cls.CONNECTION_PAYLOADS:
-            raise TypeError(
-                "{0} is already a registered connection payload. Please choose a different name.".format(name)
-            )
-
-        cls.CONNECTION_PAYLOADS[name] = template
-
-    @classmethod
-    def validate_connection_payload(cls, payload):
-        """
-        Validates the payload against the registered template for the defined payload type.
-        :param payload:
-        :return:
-        """
-        payload['payload']
-
     @classmethod
     def decode(cls, byte_string):
         """
@@ -59,9 +25,11 @@ class PeerHandler(socketserver.BaseRequestHandler):
         :param byte_string:
         :return:
         """
-        payload = json.loads(str(base64.b64decode(byte_string), 'ascii'))
-        cls.validate_connection_payload(payload)
-        return payload
+        try:
+            payload = json.loads(str(base64.b64decode(byte_string), 'ascii'))
+            return payload
+        except json.decoder.JSONDecodeError:
+            return byte_string
 
     @classmethod
     def encode(cls, peer_id, obj):
@@ -73,9 +41,9 @@ class PeerHandler(socketserver.BaseRequestHandler):
         """
         # tag with the peer
         obj['peer'] = str(peer_id)
-        cls.validate_connection_payload(obj)
         return base64.b64encode(bytes(json.dumps(obj), 'ascii'))
 
+    # noinspection PyPep8Naming
     def handle(self):
         """
         Handles all incoming requests to the server.
@@ -83,21 +51,34 @@ class PeerHandler(socketserver.BaseRequestHandler):
         """
         raw = self.request.recv(1024)
 
+        # response codes
+        NULL = self.server.get_flag('NULL')
+        INVALID_CONNECTION = self.server.get_flag('INVALID_CONNECTION')
+
         # if there is no data, bail and don't respond
         if not raw:
+            self.request.sendall(NULL)
             return
 
         # convert from json
         try:
             data = self.decode(raw)
 
+            # skip if there is no data in the request
             if not data:
+                self.request.sendall(NULL)
                 return
 
-            if data['payload'] == 'none':
-                packet = {'payload': 'ping'}
-                payload = self.encode(self.server.id, packet)
-                self.request.sendall(payload)
+            # pull in the connection registered on this peer.
+            connection = self.server.CONNECTIONS.get(data['connection'].encode('ascii'))
+
+            # throw invalid if the connection doesn't exist on this peer.
+            if not connection:
+                self.request.sendall(INVALID_CONNECTION)
+                return
+
+            # execute the connection handler
+            print(connection(self.server, *data['args'], **data['kwargs']))
 
         except (json.decoder.JSONDecodeError, TypeError) as e:
             error(e)

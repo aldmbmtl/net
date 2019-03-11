@@ -28,8 +28,12 @@ SINGLETON = None
 # noinspection PyMissingConstructor
 class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # adding in object for 2.7 support
 
-    CONNECTIONS = {}
+    # utilities
     ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<app>.+)")
+
+    # store
+    CONNECTIONS = {}
+    FLAGS = {}
 
     @staticmethod
     def ping(port, host='localhost'):
@@ -72,7 +76,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         :param id:
         :return:
         """
-        expr = cls.ID_REGEX.fullmatch(str(base64.b64decode(id), 'ascii'))
+        expr = cls.ID_REGEX.fullmatch(base64.b64decode(id).decode('ascii'))
 
         return {
             'app': expr['app'],
@@ -103,7 +107,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
                     super(_Peer, self).__init__((self.host, port), PeerHandler)
                     debug("Found Port: {0}".format(termcolor.colored(port, "green")))
                     break
-                except OSError:
+                except (OSError, ConnectionRefusedError):
                     warning("Stale Port: {0}".format(termcolor.colored(port, "yellow")))
 
             port += 1
@@ -127,36 +131,21 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         return base64.b64encode('{0}.{1}'.format(connection.__module__, connection.__name__).encode('ascii'))
 
     @classmethod
-    def get_connection(cls, connection):
-        """
-        Get a registered connection. Do not use this directly.
-        :param connection:
-        :return:
-        """
-        return cls.register_connection(connection)
-
-    @classmethod
-    def register_connection(cls, connection, payload):
+    def register_connection(cls, connection):
         """
         Registers a connection with the global handler.
         Do not use this directly. Instead use the net.connect decorator.
 
-        my_payload = net.payload(
-            argument1=True,  <- required
-            argument2=False  <- not required
-        )
-
-        @net.connect(my_payload)
+        @net.connect
         def your_function(payload):
             arg1 = payload['argument1']
             ...do something
 
-        @net.connect(my_payload)
+        @net.connect
         def your_next_function(payload):
             arg1 = payload['argument1']
             ...do something
 
-        :param payload: payload
         :param connection: function
         :return:
         """
@@ -164,10 +153,49 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         # add the connection to the connection registry.
         if connections_name in cls.CONNECTIONS:
-            warning("Redefining a handler. Be aware, this could cause unexpected results.")
-        cls.CONNECTIONS[connections_name] = (connection, payload)
+            warning("Redefining a connection handler. Be aware, this could cause unexpected results.")
+        cls.CONNECTIONS[connections_name] = connection
 
         return connections_name
+
+    @classmethod
+    def register_flag(cls, flag, handler):
+        """
+        Registers a flag with the peer server. Flags are simple responses that can trigger error handling or logging.
+        Do not use this directly. Instead use the net.flag decorator.
+
+        @net.flag("SOME_ERROR")
+        def your_next_function(peer, connection):
+            raise SomeError("This failed because {0} failed on the other peer.".format(connection))
+
+        :param flag: payload
+        :param handler: function
+        :return:
+        """
+
+        flag = base64.b64encode(flag.encode('ascii'))
+
+        if flag in cls.FLAGS:
+            warning("Redefining a flag handler. Be aware, this could cause unexpected results.")
+
+        cls.FLAGS[flag] = handler
+
+        return flag
+
+    @classmethod
+    def get_flag(cls, flag):
+        """
+        Get a flags id.
+        :param flag:
+        :return:
+        """
+        encoded = base64.b64encode(flag.encode('ascii'))
+
+        # validate the flag requested
+        if encoded not in cls.FLAGS:
+            raise Exception("Invalid Flag requested.")
+
+        return encoded
 
     def __init__(self, launch=True, test=False):
 
@@ -233,7 +261,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         """
         self._thread.start()
 
-    def request(self, peer, connection, **kwargs):
+    def request(self, peer, connection, *args, **kwargs):
         """
         Request an action and response from a peer.
         :param peer: base64 encoded peer id
@@ -247,7 +275,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
             peer = (expr['host'], expr['port'])
 
         # package up the request
-        payload = {'connection': connection, 'kwargs': kwargs}
+        payload = {'connection': connection.decode('ascii'), 'args': args, 'kwargs': kwargs}
 
         # socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -258,7 +286,15 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         # sock
         raw = sock.recv(1024)
-        response = PeerHandler.decode(raw)
+
+        # handle flags
+        if raw in self.FLAGS:
+            terminate = self.FLAGS[raw](self, connection, peer)
+            if terminate:
+                return
+
+        # decode and return final response
+        return PeerHandler.decode(raw)
 
 
 # noinspection PyPep8Naming
