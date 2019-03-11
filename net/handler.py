@@ -84,6 +84,7 @@ class PeerHandler(socketserver.BaseRequestHandler):
 
         except Exception as e:
             error(e)
+            error(traceback.format_exc())
             packet = {
                 'payload': 'error',
                 'traceback': traceback.format_exc()
