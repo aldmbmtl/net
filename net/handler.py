@@ -26,10 +26,11 @@ class PeerHandler(socketserver.BaseRequestHandler):
         :return:
         """
         try:
-            payload = json.loads(base64.b64decode(byte_string))
+            payload = json.loads(base64.b64decode(byte_string).decode('ascii'))
             return payload
         except Exception as e:
             error(e)
+            error(traceback.format_exc())
             return byte_string
 
     @classmethod
