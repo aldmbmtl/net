@@ -8,7 +8,7 @@ __all__ = [
 from logging import info, error
 
 # package imports
-from .peer import Peer, _Peer
+from .peer import Peer, _Peer, PeerHandler
 
 # 3rd party
 from termcolor import colored
@@ -24,13 +24,22 @@ def connect(func):
 
     def interface(*args, **kwargs):
         # execute the function as is if this is being run by the local peer
-        if kwargs.get('NET_RUN') or not kwargs.get('peer'):
-            info(colored("Remote", 'green') + " call.")
-            return func(Peer(), *args, **kwargs)
+        if not kwargs.get('peer'):
+            info("{0} execution on {1}".format(
+                colored("Local", 'green', attrs=['bold']), colored(str(Peer().friendly_id), 'magenta'))
+            )
+            return PeerHandler.decode(
+                func(Peer(), PeerHandler, *args, **kwargs)
+            )
 
+        # grab the local peer
+        peer = Peer()
+        info("{0} execution on {1}".format(
+            colored("Remote", 'blue', attrs=['bold']), colored(str(peer.decode_id(kwargs.get('peer'))), 'magenta'))
+        )
 
-        info(colored("Remote", 'blue') + " call.")
-        response = Peer().request(connection=connection_name, **kwargs)
+        # make request
+        response = peer.request(connection=connection_name, **kwargs)
 
         # handle error catching
         if isinstance(response, dict) and response.get('payload'):

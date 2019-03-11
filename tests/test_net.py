@@ -41,7 +41,7 @@ def test_connect_decorator(peers):
     """
     master, slave = peers
 
-    assert net.info(peer=slave.id) != master.friendly_id
+    assert net.info() != net.info(peer=slave.id)
 
 
 def test_flag_decorator(peers):
@@ -52,8 +52,8 @@ def test_flag_decorator(peers):
 
     # define the testing connection handler
     @net.connect
-    def test_response_handler(peer):
-        flag = peer.server.get_flag("TEST")
+    def test_response_handler(peer, handler):
+        flag = peer.get_flag("TEST")
         return flag
 
     # should throw an error since the flag is not defined yet

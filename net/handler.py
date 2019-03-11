@@ -80,7 +80,7 @@ class PeerHandler(socketserver.BaseRequestHandler):
                 return
 
             # execute the connection handler and send back
-            response = connection(self, *data['args'], **data['kwargs'])
+            response = connection(self.server, self, *data['args'], **data['kwargs'])
             self.request.sendall(response)
 
         except Exception as e:

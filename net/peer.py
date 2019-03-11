@@ -29,14 +29,14 @@ SINGLETON = None
 class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # adding in object for 2.7 support
 
     # utilities
-    ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<app>.+)")
+    ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<group>.+)")
 
     # store
     CONNECTIONS = {}
     FLAGS = {}
 
     @staticmethod
-    def ping(port, host='localhost'):
+    def ping(port, host=socket.gethostname()):
         """
         Ping a port and check if it is alive or open.
 
@@ -54,18 +54,19 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
             return False
 
     @staticmethod
-    def generate_id(port, host):
+    def generate_id(port, host, group):
         """
         Generate a peers id.
         :param port:
         :param host:
+        :param group:
         :return:
         """
         return base64.b64encode(
-            '{host}:{port} -> {exe}'.format(
+            '{host}:{port} -> {group}'.format(
                 host=socket.gethostname() if not host else host,
                 port=port,
-                exe=sys.executable
+                group=group,
             ).encode('ascii')
         )
 
@@ -79,7 +80,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         expr = cls.ID_REGEX.match(base64.b64decode(id).decode('ascii')).groupdict()
 
         return {
-            'app': expr['app'],
+            'group': expr['group'],
             'host': expr['host'],
             'port': int(expr['port'])
         }
@@ -197,7 +198,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         return encoded
 
-    def __init__(self, launch=True, test=False):
+    def __init__(self, launch=True, test=False, group=None):
 
         # mask with singleton catch unless being tested
         if SINGLETON and not test:
@@ -208,6 +209,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         # find port
         self._host = socket.gethostname()
         self._port = self.scan_for_port()
+        self._group = str(os.environ.get('NET_GROUP') if not group else group)
 
         # handle threading
         self._thread = threading.Thread(target=self.serve_forever)
@@ -216,6 +218,10 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         # launch the peer
         if launch:
             self.launch()
+
+    @property
+    def group(self):
+        return self._group
 
     @property
     def port(self):
@@ -240,7 +246,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         base64 encoded for easier delivery.
         :return:
         """
-        return self.generate_id(self.port, self.host)
+        return self.generate_id(self.port, self.host, self.group)
 
     @property
     def friendly_id(self, peer_id=None):
