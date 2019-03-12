@@ -15,7 +15,7 @@ import netaddr
 import net
 
 # local imports
-from net.imports import ConnectionRefusedError
+from net.imports import ConnectionRefusedError, PermissionError
 
 
 DEFAULT = socket.gethostbyname(socket.gethostname()).rsplit('.', 1)[0] + '.0'
@@ -59,11 +59,11 @@ def get_remote_peers(groups=[]):
                 try:
                     # ping the peer and if it responds with the proper info, register it
                     net.info(peer=foreign_peer_id, time_out=0.005)
-                    found_peers.append(foreign_peer_id)
+                    yield foreign_peer_id
                 except (PermissionError, ConnectionRefusedError, OSError):
                     pass
 
                 total_pings += 1
 
-    print("Total pings: {0}".format(total_pings))
-    print("Found peers: {0}".format(len(found_peers)))
+    # print("Total pings: {0}".format(total_pings))
+    # print("Found peers: {0}".format(len(found_peers)))

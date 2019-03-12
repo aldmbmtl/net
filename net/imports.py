@@ -18,6 +18,9 @@ try:
     # noinspection PyShadowingBuiltins
     from socket import error as ConnectionRefusedError
 
+    # noinspection PyShadowingBuiltins
+    PermissionError = OSError
+
 except ImportError:
 
     # python 3
@@ -25,3 +28,6 @@ except ImportError:
 
     # noinspection PyShadowingBuiltins
     ConnectionRefusedError = ConnectionRefusedError
+
+    # noinspection PyShadowingBuiltins
+    PermissionError = PermissionError
