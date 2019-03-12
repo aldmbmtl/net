@@ -67,3 +67,12 @@ def test_flag_decorator(peers):
 
     # flag is defined and should not fail
     assert test_response_handler(peer=slave.id) == "TEST"
+
+
+def test_api(peers):
+    """
+    Test the connect decorator
+    """
+    master, slave = peers
+
+    net.get_remote_peers()

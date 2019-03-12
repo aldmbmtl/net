@@ -36,6 +36,19 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     FLAGS = {}
 
     @staticmethod
+    def ports():
+        """
+        Generator; All ports defined in the environment.
+        :return: int
+        """
+        port_start = int(os.environ.setdefault("NET_PORT", "3010"))
+        port_range = port_start + int(os.environ.setdefault("NET_PORT_RANGE", "40"))
+
+        # loop over ports
+        for port in range(port_start, port_range):
+            yield port
+
+    @staticmethod
     def ping(port, host=socket.gethostname()):
         """
         Ping a port and check if it is alive or open.
@@ -285,6 +298,12 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         # socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # set the time out on the function
+        if kwargs.get('time_out'):
+            sock.settimeout(kwargs.get('time_out'))
+
+        # connect
         sock.connect(peer)
 
         # send request

@@ -20,3 +20,4 @@ from .peer import *
 from .flag import *
 from .connect import *
 from .defaults import *
+from .api import *

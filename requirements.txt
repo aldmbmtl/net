@@ -1,2 +1,3 @@
+netaddr
 click==7.0
 termcolor==1.1.0
