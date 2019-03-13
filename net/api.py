@@ -7,9 +7,7 @@ __all__ = [
 # std imports
 import os
 import socket
-
-# third party
-import netaddr
+import struct
 
 # package imports
 import net
@@ -22,6 +20,21 @@ DEFAULT = socket.gethostbyname(socket.gethostname()).rsplit('.', 1)[0] + '.0'
 SUBNET_IP = os.environ.get("SUBNET") if os.environ.get("SUBNET") else DEFAULT
 SUBNET_MASK = os.environ.get("SUBNET_MASK") if os.environ.get("SUBNET_MASK") else '25'
 SUBNET_CIDR = "{0}/{1}".format(SUBNET_IP, SUBNET_MASK)
+
+
+def generate_network(ip, cidr):
+    """
+    Generate a set of ip addresses bases on the cidr network passed
+    :param ip:
+    :param cidr:
+    :return:
+    """
+    host_bits = 32 - int(cidr)
+    i = struct.unpack('>I', socket.inet_aton(ip))[0]
+    start = (i >> host_bits) << host_bits
+    end = start | (1 << host_bits)
+
+    return [socket.inet_ntoa(struct.pack('>I', address)) for address in range(start, end)]
 
 
 def get_remote_peers(groups=[]):
@@ -37,12 +50,12 @@ def get_remote_peers(groups=[]):
     # get this peer for pinging
     peer = net.Peer()
 
-    # create subnet
-    network = netaddr.IPNetwork(SUBNET_CIDR)
-
     # groups
     if not groups:
         groups = [peer.group]
+
+    # create subnet
+    network = generate_network(ip=SUBNET_IP, cidr=SUBNET_MASK)
 
     # loop over all the addresses
     for address in network:

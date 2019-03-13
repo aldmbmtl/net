@@ -69,10 +69,8 @@ def test_flag_decorator(peers):
     assert test_response_handler(peer=slave.id) == "TEST"
 
 
-def test_api(peers):
+def test_api():
     """
-    Test the connect decorator
+    Test api functions
     """
-    master, slave = peers
-
-    net.get_remote_peers()
+    assert len([peer for peer in net.get_remote_peers()]) == 2
