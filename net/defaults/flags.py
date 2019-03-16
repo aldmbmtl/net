@@ -12,12 +12,13 @@ from net import flag
 def null_response(this_peer, connection, peer):
     """
     Execute this if the peer has returned the NULL_RESPONSE flag.
+
     :param this_peer:
     :param connection:
     :param peer:
     :return:
     """
-    return 1
+    return "NULL"
 
 
 # Flags
@@ -25,6 +26,7 @@ def null_response(this_peer, connection, peer):
 def invalid_connection(this_peer, connection, peer):
     """
     Execute this if the peer has returned the NULL_RESPONSE flag.
+
     :param this_peer:
     :param connection:
     :param peer:

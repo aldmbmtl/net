@@ -4,9 +4,6 @@ from __future__ import print_function
 
 """Tests for `net` package."""
 
-# std imports
-from logging import info
-
 # testing
 import pytest
 
@@ -19,8 +16,11 @@ def peers():
     """
     Set up the peers for testing.
     """
+    net.LOGGER.debug("Test Header")
+
     master = net.Peer()
     slave = master.__class__(test=True)
+
     yield master, slave
 
 
@@ -28,6 +28,8 @@ def test_peer_construct(peers):
     """
     Construct and connect 2 peer servers.
     """
+    net.LOGGER.debug("Test Header")
+
     master, slave = peers
 
     assert master.port != slave.port
@@ -39,15 +41,43 @@ def test_connect_decorator(peers):
     """
     Test the connect decorator
     """
+    net.LOGGER.debug("Test Header")
+
     master, slave = peers
 
     assert net.info() != net.info(peer=slave.id)
+
+    test_cases = [
+        # dicts types
+        {"testing": "value"}, {"1": 1}, {"1": {"2": 3}},
+
+        # array types
+        [1, "1", "1"], (1, 2, 3),
+
+        # strings types
+        "This is a string", "",
+
+        # None type
+        None,
+
+        # bool types
+        True, False,
+
+        # number types
+        1.0, 1,
+    ]
+
+    # loop over each test case and make sure a remote response equals to a local response.
+    for case in test_cases:
+        assert net.pass_through(case) == net.pass_through(case, peer=slave.id)
 
 
 def test_flag_decorator(peers):
     """
     Test the connect decorator
     """
+    net.LOGGER.debug("Test Header")
+
     master, slave = peers
 
     # define the testing connection handler
@@ -58,7 +88,10 @@ def test_flag_decorator(peers):
 
     # should throw an error since the flag is not defined yet
     with pytest.raises(Exception):
+
+        net.LOGGER.disabled = True
         test_response_handler(peer=slave.id)
+        net.LOGGER.disabled = False
 
     # define the missing flag
     @net.flag("TEST")
@@ -73,4 +106,24 @@ def test_api():
     """
     Test api functions
     """
-    assert len([peer for peer in net.get_remote_peers()]) == 2
+    net.LOGGER.debug("Test Header")
+
+    assert net.get_peers(_test_bypass_threading=True) == net.get_peers()
+
+
+def test_none_threaded_api():
+    """
+    Test api functions
+    """
+    net.LOGGER.debug("Test Header")
+
+    assert len(net.get_peers(_test_bypass_threading=True)) == 2
+
+
+def test_threaded_api():
+    """
+    Test api functions
+    """
+    net.LOGGER.debug("Test Header")
+
+    assert len(net.get_peers()) == 2

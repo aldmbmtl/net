@@ -1,5 +1,3 @@
-.. highlight:: shell
-
 ============
 Installation
 ============
@@ -12,7 +10,7 @@ To install net, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install net
+    $ pip install app-net
 
 This is the preferred method to install net, as it will always install the most recent stable release.
 

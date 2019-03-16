@@ -8,10 +8,12 @@ __all__ = [
 import json
 import base64
 import traceback
-from logging import error
 
 # python 2/3 imports
 from .imports import socketserver
+
+# package imports
+import net
 
 
 class PeerHandler(socketserver.BaseRequestHandler):
@@ -26,23 +28,36 @@ class PeerHandler(socketserver.BaseRequestHandler):
         :return:
         """
         try:
-            payload = json.loads(base64.b64decode(byte_string).decode('ascii'))
-            return payload
-        except Exception as e:
-            error(e)
-            error(traceback.format_exc())
-            return byte_string
+            byte_string = base64.b64decode(byte_string).decode('ascii')
+            byte_string = json.loads(byte_string)
+        except (Exception, json.JSONDecodeError) as e:
+            net.LOGGER.debug(byte_string)
+            net.LOGGER.debug(e)
+            net.LOGGER.debug(traceback.format_exc())
+
+        # if the connection returns data that is not prepackaged as a JSON object, return
+        # the raw response as it originally was returned.
+        if isinstance(byte_string, dict) and 'raw' in byte_string:
+            return byte_string['raw']
+
+        return byte_string
 
     @classmethod
-    def encode(cls, peer_id, obj):
+    def encode(cls, obj):
         """
         Encode an object for delivery.
-        :param peer_id: str
         :param obj:
         :return:
         """
+        if not isinstance(obj, dict):
+            try:
+                if obj in net.Peer().FLAGS:
+                    return obj
+            except TypeError:
+                pass
+            obj = {'raw': obj}
+
         # tag with the peer
-        obj['peer'] = str(peer_id)
         return base64.b64encode(json.dumps(obj).encode('ascii'))
 
     # noinspection PyPep8Naming
@@ -80,15 +95,15 @@ class PeerHandler(socketserver.BaseRequestHandler):
                 return
 
             # execute the connection handler and send back
-            response = connection(self.server, self, *data['args'], **data['kwargs'])
+            response = self.encode(connection(self.server, self, *data['args'], **data['kwargs']))
             self.request.sendall(response)
 
         except Exception as e:
-            error(e)
-            error(traceback.format_exc())
+            net.LOGGER.error(e)
+            net.LOGGER.error(traceback.format_exc())
             packet = {
                 'payload': 'error',
                 'traceback': traceback.format_exc()
             }
-            payload = self.encode(self.server.id, packet)
+            payload = self.encode(packet)
             self.request.sendall(payload)

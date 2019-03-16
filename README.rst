@@ -1,6 +1,10 @@
-===
-net
-===
+.. _Documentation: https://net.readthedocs.io
+.. _pip: https://pip.pypa.io
+.. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+
+=======
+app-net
+=======
 
 
 .. image:: https://img.shields.io/pypi/v/net.svg
@@ -24,22 +28,51 @@ net
      :alt: Python 3
 
 
-
-Python program communication interface.
-
-* Free software: MIT license
-* Documentation: https://net.readthedocs.io.
+.. image:: https://img.shields.io/github/license/Naereen/StrapDown.js.svg
+    :target: https://github.com/Naereen/StrapDown.js/blob/master/LICENSE
+    :alt: MIT License
 
 
-Features
---------
+Pure python peer-to-peer interfacing framework. Define functions that can be executed from within the
+running instance of python, just like a normal function. Or execute the same function on a remote peer
+running either the same application or a compatible function and return the result as though it was run
+locally.
 
-* TODO
+Link to the Documentation_.
 
-Credits
--------
+.. include:: docs/installation.rst
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+Basic Example
+-------------
+Below is a basic example of defining an application that is running on 2 separate hosts independently.
+We will define a simple function that will take a positional argument and keyword argument then multiplies
+them together and returns the result.
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+First we will define our function
+
+.. code-block:: python
+
+    import net
+
+    @net.connect
+    def my_function(peer, request, some_arg, some_kwarg=5):
+        return some_arg * some_kwarg
+
+
+Now we can launch 2 instances of python. It can be either on the same or remote host, net handles this through peer ids.
+
+.. code-block:: python
+
+    >>> import net
+    >>> # run this function locally on this instance of python
+    >>> my_function(5, some_kwarg=10)
+    50
+    >>># get all peers on the network
+    >>> for peer_id in net.get_peers():
+    >>>     # execute the same function but on other instances
+    >>>     # of python and return the resutls
+    >>>     print(my_function(5, some_kwarg=10, peer=peer_id))
+    >>>
+    50
+    ...
+    ...

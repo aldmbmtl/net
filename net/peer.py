@@ -7,11 +7,9 @@ __all__ = [
 # std imports
 import re
 import os
-import sys
 import socket
 import base64
 import threading
-from logging import debug, warning
 
 # third party
 import termcolor
@@ -19,6 +17,9 @@ import termcolor
 # package imports
 from .handler import PeerHandler
 from .imports import socketserver, ConnectionRefusedError
+
+# package imports
+from net import LOGGER
 
 
 # globals
@@ -42,11 +43,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         :return: int
         """
         port_start = int(os.environ.setdefault("NET_PORT", "3010"))
-        port_range = port_start + int(os.environ.setdefault("NET_PORT_RANGE", "40"))
+        port_range = port_start + int(os.environ.setdefault("NET_PORT_RANGE", "10"))
 
-        # loop over ports
-        for port in range(port_start, port_range):
-            yield port
+        return [port for port in range(port_start, port_range)]
 
     @staticmethod
     def ping(port, host=socket.gethostname()):
@@ -83,6 +82,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
             ).encode('ascii')
         )
 
+    # noinspection PyShadowingBuiltins
     @classmethod
     def decode_id(cls, id):
         """
@@ -112,17 +112,17 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         port = int(os.environ.setdefault("NET_PORT", "3010"))
         port_range = port + int(os.environ.setdefault("NET_PORT_RANGE", "40"))
 
-        debug("Scanning {0} ports for open port...".format(port_range - port))
+        LOGGER.debug("Scanning {0} ports for open port...".format(port_range - port))
         while port <= port_range:
 
             # ping the local host ports
             if not self.ping(port):
                 try:
                     super(_Peer, self).__init__((self.host, port), PeerHandler)
-                    debug("Found Port: {0}".format(termcolor.colored(port, "green")))
+                    LOGGER.debug("Found Port: {0}".format(termcolor.colored(port, "green")))
                     break
                 except (OSError, ConnectionRefusedError):
-                    warning("Stale Port: {0}".format(termcolor.colored(port, "yellow")))
+                    LOGGER.warning("Stale Port: {0}".format(termcolor.colored(port, "yellow")))
 
             port += 1
 
@@ -167,7 +167,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         # add the connection to the connection registry.
         if connections_name in cls.CONNECTIONS:
-            warning("Redefining a connection handler. Be aware, this could cause unexpected results.")
+            LOGGER.warning("Redefining a connection handler. Be aware, this could cause unexpected results.")
         cls.CONNECTIONS[connections_name] = connection
 
         return connections_name
@@ -190,11 +190,26 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         flag = base64.b64encode(flag.encode('ascii'))
 
         if flag in cls.FLAGS:
-            warning("Redefining a flag handler. Be aware, this could cause unexpected results.")
+            LOGGER.warning("Redefining a flag handler. Be aware, this could cause unexpected results.")
 
         cls.FLAGS[flag] = handler
 
         return flag
+
+    @classmethod
+    def process_flags(cls, response):
+        """
+        Check a response and test if it should be processed as a flag.
+
+        :param response: Anything
+        :return:
+        """
+        # handle flags
+        try:
+            if response in cls.FLAGS:
+                return cls.FLAGS[response]
+        except TypeError:
+            pass
 
     @classmethod
     def get_flag(cls, flag):
@@ -280,11 +295,12 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         """
         self._thread.start()
 
-    def request(self, peer, connection, *args, **kwargs):
+    def request(self, peer, connection, args, kwargs):
         """
         Request an action and response from a peer.
         :param peer: base64 encoded peer id
         :param connection: the target connection id to run
+        :param args: positional arguments to pass to the target connection (must be json compatible)
         :param kwargs: keyword arguments to pass to the target connection (must be json compatible)
         :return:
         """
@@ -293,7 +309,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
             expr = self.decode_id(peer)
             peer = (expr['host'], expr['port'])
 
-        # package up the request
+        # package up the request, by default delete the peer argument in the kwargs.
+        if kwargs.get("peer"):
+            del kwargs['peer']
         payload = {'connection': connection.decode('ascii'), 'args': args, 'kwargs': kwargs}
 
         # socket connection
@@ -307,14 +325,17 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         sock.connect(peer)
 
         # send request
-        sock.sendall(PeerHandler.encode(self.id, payload))
+        sock.sendall(PeerHandler.encode(payload))
 
         # sock
         raw = sock.recv(1024)
 
         # handle flags
-        if raw in self.FLAGS:
-            terminate = self.FLAGS[raw](self, connection, peer)
+        processor = self.process_flags(raw)
+        if processor:
+            terminate = processor(self, connection, peer)
+
+            # if flag returns anything, return it
             if terminate:
                 return terminate
 
