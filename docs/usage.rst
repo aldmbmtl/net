@@ -15,7 +15,7 @@ Basic usage of defining connected net function.
 
     # application code
     @net.connect
-    def multiply_values(peer, request, val1, val2):
+    def multiply_values(val1, val2):
         return val1 * val2
 
 Running the function locally

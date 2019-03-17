@@ -40,7 +40,7 @@ locally.
 
 Link to the Documentation_.
 
-.. include:: docs/installation.rst
+.. include:: ./docs/installation.rst
 
 Basic Example
 -------------
@@ -67,7 +67,7 @@ Now we can launch 2 instances of python. It can be either on the same or remote 
     >>> # run this function locally on this instance of python
     >>> my_function(5, some_kwarg=10)
     50
-    >>># get all peers on the network
+    >>> # get all peers on the network
     >>> for peer_id in net.get_peers():
     >>>     # execute the same function but on other instances
     >>>     # of python and return the resutls

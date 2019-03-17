@@ -7,8 +7,10 @@ __all__ = [
 # std imports
 import re
 import os
+import json
 import socket
 import base64
+import traceback
 import threading
 
 # third party
@@ -37,9 +39,52 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     FLAGS = {}
 
     @staticmethod
+    def decode(byte_string):
+        """
+        Decode a byte string sent from a peer.
+
+        :param byte_string: base64
+        :return: str
+        """
+        try:
+            byte_string = base64.b64decode(byte_string).decode('ascii')
+            byte_string = json.loads(byte_string)
+        except (Exception, json.JSONDecodeError) as e:
+            LOGGER.debug(byte_string)
+            LOGGER.debug(e)
+            LOGGER.debug(traceback.format_exc())
+
+        # if the connection returns data that is not prepackaged as a JSON object, return
+        # the raw response as it originally was returned.
+        if isinstance(byte_string, dict) and 'raw' in byte_string:
+            return byte_string['raw']
+
+        return byte_string
+
+    @classmethod
+    def encode(cls, obj):
+        """
+        Encode an object for delivery.
+
+        :param obj: JSON compatible types
+        :return: str
+        """
+        if not isinstance(obj, dict):
+            try:
+                if obj in cls.FLAGS:
+                    return obj
+            except TypeError:
+                pass
+            obj = {'raw': obj}
+
+        # tag with the peer
+        return base64.b64encode(json.dumps(obj).encode('ascii'))
+
+    @staticmethod
     def ports():
         """
         Generator; All ports defined in the environment.
+
         :return: int
         """
         port_start = int(os.environ.setdefault("NET_PORT", "3010"))
@@ -54,7 +99,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         :param port: required port to hit
         :param host: host address default is 'localhost'
-        :return:
+        :return: bool
         """
 
         interface = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -69,10 +114,11 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     def generate_id(port, host, group):
         """
         Generate a peers id.
-        :param port:
-        :param host:
-        :param group:
-        :return:
+
+        :param port: int
+        :param host: str
+        :param group: str
+        :return: base64
         """
         return base64.b64encode(
             '{host}:{port} -> {group}'.format(
@@ -87,8 +133,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     def decode_id(cls, id):
         """
         Decode a peer id
-        :param id:
-        :return:
+
+        :param id: base64
+        :return: dict {'group': str, 'host': str, 'port': int }
         """
         expr = cls.ID_REGEX.match(base64.b64decode(id).decode('ascii')).groupdict()
 
@@ -140,7 +187,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         easier delivery between peers.
 
         :param connection: connection
-        :return: base64 encoded str
+        :return: base64
         """
         return base64.b64encode('{0}.{1}'.format(connection.__module__, connection.__name__).encode('ascii'))
 
@@ -150,18 +197,10 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         Registers a connection with the global handler.
         Do not use this directly. Instead use the net.connect decorator.
 
-        @net.connect
-        def your_function(payload):
-            arg1 = payload['argument1']
-            ...do something
-
-        @net.connect
-        def your_next_function(payload):
-            arg1 = payload['argument1']
-            ...do something
+        :func:`net.connect`
 
         :param connection: function
-        :return:
+        :return: str
         """
         connections_name = cls.build_connection_name(connection)
 
@@ -184,7 +223,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
         :param flag: payload
         :param handler: function
-        :return:
+        :return: base64
         """
 
         flag = base64.b64encode(flag.encode('ascii'))
@@ -202,7 +241,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         Check a response and test if it should be processed as a flag.
 
         :param response: Anything
-        :return:
+        :return: response from the registered process
         """
         # handle flags
         try:
@@ -215,8 +254,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     def get_flag(cls, flag):
         """
         Get a flags id.
-        :param flag:
-        :return:
+
+        :param flag: str
+        :return: str
         """
         encoded = base64.b64encode(flag.encode('ascii'))
 
@@ -249,13 +289,19 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
 
     @property
     def group(self):
+        """
+        Group this peer is assigned to.
+
+        :return: str
+        """
         return self._group
 
     @property
     def port(self):
         """
         Port that the peer is running on.
-        :return:
+
+        :return: int
         """
         return self._port
 
@@ -263,7 +309,8 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     def host(self):
         """
         Host that the peer is running on.
-        :return:
+
+        :return: str
         """
         return self._host
 
@@ -272,7 +319,8 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         """
         Get this peers id. This is tethered to the port and the executable path the peer was launched with. This is
         base64 encoded for easier delivery.
-        :return:
+
+        :return: base64
         """
         return self.generate_id(self.port, self.host, self.group)
 
@@ -280,7 +328,8 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     def friendly_id(self, peer_id=None):
         """
         Get the peers id in a friendly displayable way.
-        :return:
+
+        :return: str
         """
         if not peer_id:
             peer_id = self.id
@@ -291,18 +340,19 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
     def launch(self):
         """
         Launch the peer. This should only be used if Peer(launch=False). Otherwise this is executed at init.
-        :return:
+
         """
         self._thread.start()
 
     def request(self, peer, connection, args, kwargs):
         """
         Request an action and response from a peer.
+
         :param peer: base64 encoded peer id
         :param connection: the target connection id to run
         :param args: positional arguments to pass to the target connection (must be json compatible)
         :param kwargs: keyword arguments to pass to the target connection (must be json compatible)
-        :return:
+        :return: response from peer
         """
         # decode
         if not isinstance(peer, tuple):
@@ -325,7 +375,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         sock.connect(peer)
 
         # send request
-        sock.sendall(PeerHandler.encode(payload))
+        sock.sendall(self.encode(payload))
 
         # sock
         raw = sock.recv(1024)
@@ -333,21 +383,28 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):  # add
         # handle flags
         processor = self.process_flags(raw)
         if processor:
-            terminate = processor(self, connection, peer)
+            terminate = processor(
+                connection,
+                {
+                    'host': peer[0],
+                    'port': peer[1],
+                }
+            )
 
             # if flag returns anything, return it
             if terminate:
                 return terminate
 
         # decode and return final response
-        return PeerHandler.decode(raw)
+        return self.decode(raw)
 
 
 # noinspection PyPep8Naming
 def Peer(*args, **kwargs):
     """
     Running Peer server for this instance of python.
-    :return: _Peer
+
+    :return: :class:`net.peer._Peer`
     """
     global SINGLETON
 

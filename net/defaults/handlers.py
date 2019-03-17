@@ -1,25 +1,33 @@
 # -*- coding: utf-8 -*-
 
+__all__ = [
+    'info',
+    'pass_through',
+    'null'
+]
+
 # package imports
-from net import connect
+from net import connect, Peer
 
 
 # basic descriptor
 @connect
-def info(peer, request, *args, **kwargs):
+def info(*args, **kwargs):
     """
     Return information about the peer requested.
-    :return:
+
+    :return: peer.friendly_id
     """
-    return peer.friendly_id
+    return Peer().friendly_id
 
 
 # utilities
 @connect
-def pass_through(peer, request, *args, **kwargs):
+def pass_through(*args, **kwargs):
     """
     Used for testing, takes your arguments and passes them back for type testing.
-    :return:
+
+    :return: *args, **kwargs
     """
     if len(args) == 1:
         return args[0]
@@ -27,9 +35,10 @@ def pass_through(peer, request, *args, **kwargs):
 
 
 @connect
-def null(peer, request, *args, **kwargs):
+def null(*args, **kwargs):
     """
     Return a null response flag
-    :return:
+
+    :return: NULL Flag
     """
-    return peer.get_flag("NULL")
+    return Peer().get_flag("NULL")

@@ -45,8 +45,6 @@ def test_connect_decorator(peers):
 
     master, slave = peers
 
-    assert net.info() != net.info(peer=slave.id)
-
     test_cases = [
         # dicts types
         {"testing": "value"}, {"1": 1}, {"1": {"2": 3}},
@@ -82,8 +80,8 @@ def test_flag_decorator(peers):
 
     # define the testing connection handler
     @net.connect
-    def test_response_handler(peer, handler):
-        flag = peer.get_flag("TEST")
+    def test_response_handler():
+        flag = net.Peer().get_flag("TEST")
         return flag
 
     # should throw an error since the flag is not defined yet
@@ -95,7 +93,7 @@ def test_flag_decorator(peers):
 
     # define the missing flag
     @net.flag("TEST")
-    def test_flag(this_peer, connection, peer):
+    def test_flag(connection, peer):
         return "TEST"
 
     # flag is defined and should not fail

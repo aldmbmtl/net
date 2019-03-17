@@ -30,9 +30,10 @@ LOCK = threading.Lock()
 def generate_network(ip, cidr):
     """
     Generate a set of ip addresses bases on the cidr network passed
+
     :param ip:
     :param cidr:
-    :return:
+    :return: list of ips
     """
     host_bits = 32 - int(cidr)
     i = struct.unpack('>I', socket.inet_aton(ip))[0]
@@ -48,7 +49,7 @@ def find_peers_in_block(ips, groups=[], _shared_array=None):
 
     :param ips: list of ip addresses
     :param groups: the list of groups you'd like to filter with. Defaults to the same as the current peer.
-    :return:
+    :return: List of peer addresses
     """
     peers = []
 

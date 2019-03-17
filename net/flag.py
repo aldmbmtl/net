@@ -4,6 +4,9 @@ __all__ = [
     'flag'
 ]
 
+# std imports
+from functools import wraps
+
 # package imports
 from .peer import _Peer
 
@@ -12,9 +15,12 @@ def flag(name):
     """
     Register a function as a flag handler for the peer server.
 
-    :param name:
+    :param name: str
     """
+
     def registry(func):
+
+        @wraps(func)
         def handler(*args, **kwargs):
             return func(*args, **kwargs)
 

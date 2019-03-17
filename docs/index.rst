@@ -8,7 +8,7 @@ Welcome to net's documentation!
    readme
    installation
    usage
-   modules
+   api
    contributing
    history
 

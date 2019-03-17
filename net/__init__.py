@@ -2,6 +2,18 @@
 """Top-level package for net."""
 from __future__ import print_function
 
+__all__ = [
+    'connect',
+    'flag',
+    'Peer',
+    'LOGGER',
+    'null_response',
+    'pass_through',
+    'null',
+    'info',
+    'invalid_connection',
+]
+
 # std imports
 import os
 from logging import getLogger, StreamHandler, Formatter, DEBUG
@@ -18,8 +30,6 @@ if os.environ.get('HFX_DEV'):
 __author__ = 'Alex Hatfield'
 __email__ = 'alex@hatfieldfx.com'
 __version__ = '0.1.0'
-
-__all__ = ['connect', 'flag', 'Peer', 'LOGGER']
 
 from .peer import *
 from .flag import *

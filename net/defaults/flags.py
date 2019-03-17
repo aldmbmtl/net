@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+__all__ = [
+    'null_response',
+    'invalid_connection'
+]
+
 # std imports
 import base64
 
@@ -9,35 +14,33 @@ from net import flag
 
 # Flags
 @flag('NULL')
-def null_response(this_peer, connection, peer):
+def null_response(connection, foreign_peer_id):
     """
     Execute this if the peer has returned the NULL_RESPONSE flag.
 
-    :param this_peer:
-    :param connection:
-    :param peer:
-    :return:
+    :param connection: name of the connection requested
+    :param foreign_peer_id: The foreign peers friendly_id
+    :return: str
     """
     return "NULL"
 
 
 # Flags
 @flag('INVALID_CONNECTION')
-def invalid_connection(this_peer, connection, peer):
+def invalid_connection(connection, foreign_peer_id):
     """
     Execute this if the peer has returned the NULL_RESPONSE flag.
 
-    :param this_peer:
-    :param connection:
-    :param peer:
+    :param connection: name of the connection requested
+    :param foreign_peer_id: The foreign peers friendly_id
     :return:
     """
     raise Exception(
         "Peer does not have the connection you are requesting.\n\t"
         "Peer: {0}@{1}\n\t"
         "Connection Requested: {2} -> {3}".format(
-            peer[0],
-            peer[1],
+            foreign_peer_id['host'],
+            foreign_peer_id['port'],
             connection,
             base64.b64decode(connection).decode('ascii')
         )
