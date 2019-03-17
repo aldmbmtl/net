@@ -55,7 +55,7 @@ First we will define our function
     import net
 
     @net.connect
-    def my_function(peer, request, some_arg, some_kwarg=5):
+    def my_function(some_arg, some_kwarg=5):
         return some_arg * some_kwarg
 
 
