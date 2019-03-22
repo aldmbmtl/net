@@ -79,7 +79,7 @@ def test_flag_decorator(peers):
     master, slave = peers
 
     # define the testing connection handler
-    @net.connect
+    @net.connect()
     def test_response_handler():
         flag = net.Peer().get_flag("TEST")
         return flag

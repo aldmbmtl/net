@@ -17,7 +17,7 @@ from net import connect, Peer
 
 
 # basic descriptor
-@connect
+@connect()
 def info(*args, **kwargs):
     """
     Return information about the peer requested.
@@ -28,7 +28,7 @@ def info(*args, **kwargs):
 
 
 # utilities
-@connect
+@connect()
 def pass_through(*args, **kwargs):
     """
     Used for testing, takes your arguments and passes them back for type testing.
@@ -40,7 +40,7 @@ def pass_through(*args, **kwargs):
     return args, kwargs
 
 
-@connect
+@connect()
 def null(*args, **kwargs):
     """
     Return a null response flag
