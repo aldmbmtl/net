@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Default Flags
+-------------
+
+Prebuilt flags for net. Do not modify.
+"""
 
 __all__ = [
     'null_response',

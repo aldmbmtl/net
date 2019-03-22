@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Default Connected Handlers
+--------------------------
+
+Prebuilt connected handlers for net. Do not modify.
+"""
 
 __all__ = [
     'info',

@@ -32,6 +32,9 @@ app-net
     :target: https://github.com/Naereen/StrapDown.js/blob/master/LICENSE
     :alt: MIT License
 
+.. image:: https://mperlet.github.io/pybadge/badges/8.41.svg
+    :alt: PyLint
+
 
 Pure python peer-to-peer interfacing framework. Define functions that can be executed from within the
 running instance of python, just like a normal function. Or execute the same function on a remote peer
@@ -69,10 +72,7 @@ Now we can launch 2 instances of python. It can be either on the same or remote 
     50
     >>> # get all peers on the network
     >>> for peer_id in net.get_peers():
-    >>>     # execute the same function but on other instances
-    >>>     # of python and return the resutls
-    >>>     print(my_function(5, some_kwarg=10, peer=peer_id))
-    >>>
+    ...     # execute the same function but on other instances of python and return the results
+    ...     print(my_function(5, some_kwarg=10, peer=peer_id))
+    ...
     50
-    ...
-    ...

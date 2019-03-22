@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Flag Module
+-----------
+
+Contains the flag decorator and should have nothing else.
+"""
 
 __all__ = [
     'flag'
@@ -19,7 +25,6 @@ def flag(name):
     """
 
     def registry(func):
-
         @wraps(func)
         def handler(*args, **kwargs):
             return func(*args, **kwargs)

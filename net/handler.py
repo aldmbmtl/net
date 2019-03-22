@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Handler Module
+--------------
+
+Contains the peer handler and should have nothing else.
+"""
 
 __all__ = [
     'PeerHandler',
@@ -7,16 +13,17 @@ __all__ = [
 # std imports
 import traceback
 
-# python 2/3 imports
-from .imports import socketserver
-
 # package imports
 import net
+
+# python 2/3 imports
+from .imports import socketserver
 
 
 class PeerHandler(socketserver.BaseRequestHandler):
     """
-    Handles all incoming requests to the applications Peer server. Do not modify or interact with directly.
+    Handles all incoming requests to the applications Peer server.
+    Do not modify or interact with directly.
     """
 
     # noinspection PyPep8Naming
@@ -27,12 +34,12 @@ class PeerHandler(socketserver.BaseRequestHandler):
         raw = self.request.recv(1024)
 
         # response codes
-        NULL = self.server.get_flag('NULL')
-        INVALID_CONNECTION = self.server.get_flag('INVALID_CONNECTION')
+        null = self.server.get_flag('NULL')
+        invalid_connection = self.server.get_flag('INVALID_CONNECTION')
 
         # if there is no data, bail and don't respond
         if not raw:
-            self.request.sendall(NULL)
+            self.request.sendall(null)
             return
 
         # convert from json
@@ -41,7 +48,7 @@ class PeerHandler(socketserver.BaseRequestHandler):
 
             # skip if there is no data in the request
             if not data:
-                self.request.sendall(NULL)
+                self.request.sendall(null)
                 return
 
             # pull in the connection registered on this peer.
@@ -49,15 +56,15 @@ class PeerHandler(socketserver.BaseRequestHandler):
 
             # throw invalid if the connection doesn't exist on this peer.
             if not connection:
-                self.request.sendall(INVALID_CONNECTION)
+                self.request.sendall(invalid_connection)
                 return
 
             # execute the connection handler and send back
             response = self.server.encode(connection(*data['args'], **data['kwargs']))
             self.request.sendall(response)
 
-        except Exception as e:
-            net.LOGGER.error(e)
+        except Exception as err:
+            net.LOGGER.error(err)
             net.LOGGER.error(traceback.format_exc())
             packet = {
                 'payload': 'error',

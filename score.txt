@@ -1,0 +1,73 @@
+************* Module net
+net/__init__.py:34:0: W0622: Redefining built-in 'ConnectionRefusedError' (redefined-builtin)
+net/__init__.py:38:0: W0622: Redefining built-in 'PermissionError' (redefined-builtin)
+net/__init__.py:34:0: C0413: Import "from .peer import *" should be placed at the top of the module (wrong-import-position)
+net/__init__.py:35:0: C0413: Import "from .flag import *" should be placed at the top of the module (wrong-import-position)
+net/__init__.py:36:0: C0413: Import "from .connect import *" should be placed at the top of the module (wrong-import-position)
+net/__init__.py:37:0: C0413: Import "from .defaults import *" should be placed at the top of the module (wrong-import-position)
+net/__init__.py:38:0: C0413: Import "from .api import *" should be placed at the top of the module (wrong-import-position)
+************* Module net.handler
+net/handler.py:66:15: W0703: Catching too general exception Exception (broad-except)
+************* Module net.connect
+net/connect.py:54:0: C0330: Wrong continued indentation.
+                )
+                ^           || (bad-continuation)
+net/connect.py:79:0: C0330: Wrong continued indentation.
+            )
+            ^           || (bad-continuation)
+net/connect.py:51:29: W1202: Use % formatting in logging functions and pass the % parameters as arguments (logging-format-interpolation)
+net/connect.py:76:25: W1202: Use % formatting in logging functions and pass the % parameters as arguments (logging-format-interpolation)
+net/connect.py:20:0: C0411: third party import "from termcolor import colored" should be placed before "from net import LOGGER" (wrong-import-order)
+************* Module net.imports
+net/imports.py:22:4: W0622: Redefining built-in 'PermissionError' (redefined-builtin)
+net/imports.py:19:4: W0622: Redefining built-in 'ConnectionRefusedError' (redefined-builtin)
+************* Module net.peer
+net/peer.py:151:0: C0301: Line too long (112/100) (line-too-long)
+net/peer.py:436:0: C0304: Final newline missing (missing-final-newline)
+net/peer.py:21:0: W0622: Redefining built-in 'ConnectionRefusedError' (redefined-builtin)
+net/peer.py:1:0: C0111: Missing module docstring (missing-docstring)
+net/peer.py:32:0: R0205: Class '_Peer' inherits from object, can be safely removed from bases in python3 (useless-object-inheritance)
+net/peer.py:53:16: W0703: Catching too general exception Exception (broad-except)
+net/peer.py:134:23: W0622: Redefining built-in 'id' (redefined-builtin)
+net/peer.py:134:4: C0103: Argument name "id" doesn't conform to snake_case naming style (invalid-name)
+net/peer.py:163:21: W1202: Use % formatting in logging functions and pass the % parameters as arguments (logging-format-interpolation)
+net/peer.py:170:33: W1202: Use % formatting in logging functions and pass the % parameters as arguments (logging-format-interpolation)
+net/peer.py:173:35: W1202: Use % formatting in logging functions and pass the % parameters as arguments (logging-format-interpolation)
+net/peer.py:258:4: R1710: Either all return statements in a function should return an expression, or none of them should. (inconsistent-return-statements)
+net/peer.py:288:4: W0231: __init__ method from base class 'TCPServer' is not called (super-init-not-called)
+net/peer.py:288:4: W0231: __init__ method from base class 'TCPServer' is not called (super-init-not-called)
+net/peer.py:338:4: C0103: Attribute name "id" doesn't conform to snake_case naming style (invalid-name)
+net/peer.py:424:0: C0103: Function name "Peer" doesn't conform to snake_case naming style (invalid-name)
+net/peer.py:430:4: W0603: Using the global statement (global-statement)
+net/peer.py:24:0: C0411: first party import "from net import LOGGER" should be placed before "from .handler import PeerHandler" (wrong-import-order)
+************* Module net.api
+net/api.py:25:0: W0622: Redefining built-in 'ConnectionRefusedError' (redefined-builtin)
+net/api.py:25:0: W0622: Redefining built-in 'PermissionError' (redefined-builtin)
+net/api.py:53:0: C0103: Argument name "ip" doesn't conform to snake_case naming style (invalid-name)
+net/api.py:71:0: W0102: Dangerous default value [] as argument (dangerous-default-value)
+net/api.py:143:8: W1202: Use % formatting in logging functions and pass the % parameters as arguments (logging-format-interpolation)
+net/api.py:159:8: W0612: Unused variable 'chunk' (unused-variable)
+************* Module net.cli
+net/cli.py:9:9: W0613: Unused argument 'args' (unused-argument)
+************* Module net.defaults.flags
+net/defaults/flags.py:23:18: W0613: Unused argument 'connection' (unused-argument)
+net/defaults/flags.py:23:30: W0613: Unused argument 'foreign_peer_id' (unused-argument)
+************* Module net.defaults.handlers
+net/defaults/handlers.py:21:0: W0613: Unused argument 'args' (unused-argument)
+net/defaults/handlers.py:21:0: W0613: Unused argument 'kwargs' (unused-argument)
+net/defaults/handlers.py:44:0: W0613: Unused argument 'args' (unused-argument)
+net/defaults/handlers.py:44:0: W0613: Unused argument 'kwargs' (unused-argument)
+************* Module net.defaults
+net/defaults/__init__.py:1:0: C0111: Missing module docstring (missing-docstring)
+************* Module net.defaults.__init__
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.defaults -> net.defaults.handlers -> net.connect) (cyclic-import)
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.defaults -> net.defaults.handlers -> net.connect -> net.peer -> net.handler) (cyclic-import)
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.defaults -> net.defaults.flags -> net.flag -> net.peer -> net.handler) (cyclic-import)
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.api) (cyclic-import)
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.flag -> net.peer -> net.handler) (cyclic-import)
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.connect) (cyclic-import)
+net/defaults/__init__.py:1:0: R0401: Cyclic import (net -> net.peer -> net.handler) (cyclic-import)
+
+------------------------------------------------------------------
+Your code has been rated at 8.41/10 (previous run: 8.38/10, +0.03)
+
