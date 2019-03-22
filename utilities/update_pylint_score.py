@@ -18,7 +18,7 @@ report = str(process.stdout.read(), 'ascii')
 score = reg_ex.search(report).groups()[0]
 print(report)
 
-with open(os.path.join(ROOT, 'score.txt'), 'w') as score_file:
+with open(os.path.join(ROOT, 'lint.log'), 'w') as score_file:
     score_file.write(report)
 
 readme = os.path.join(ROOT, 'README.rst')

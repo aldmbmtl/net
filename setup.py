@@ -14,13 +14,9 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-with open(os.path.join(root, 'requirements.txt')) as requirements_txt:
-    requirements = requirements_txt.read().split('\n')
-
-with open(os.path.join(root, 'requirements_dev.txt')) as test_requirements_txt:
-    test_requirements = test_requirements_txt.read().split('\n')
-
+requirements = ['Click>=6.0', ]
 setup_requirements = ['pytest-runner', ]
+test_requirements = ['pytest', ]
 
 setup(
     author="Alex Hatfield",
