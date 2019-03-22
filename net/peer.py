@@ -21,7 +21,7 @@ from .handler import PeerHandler
 from .imports import socketserver, ConnectionRefusedError
 
 # package imports
-from net import LOGGER
+import net
 
 
 # globals
@@ -37,6 +37,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
 
     # store
     CONNECTIONS = {}
+    SUBSCRIPTIONS = {}
     FLAGS = {}
 
     @staticmethod
@@ -51,9 +52,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             byte_string = base64.b64decode(byte_string).decode('ascii')
             byte_string = json.loads(byte_string)
         except (Exception, json.JSONDecodeError) as err:
-            LOGGER.debug(byte_string)
-            LOGGER.debug(err)
-            LOGGER.debug(traceback.format_exc())
+            net.LOGGER.debug(byte_string)
+            net.LOGGER.debug(err)
+            net.LOGGER.debug(traceback.format_exc())
 
         # if the connection returns data that is not prepackaged as a JSON object, return
         # the raw response as it originally was returned.
@@ -88,10 +89,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
 
         :return: int
         """
-        port_start = int(os.environ.setdefault("NET_PORT", "3010"))
-        port_range = port_start + int(os.environ.setdefault("NET_PORT_RANGE", "10"))
-
-        return [port for port in range(port_start, port_range)]
+        return [port for port in range(net.PORT_START, net.PORT_START + net.PORT_RANGE)]
 
     @staticmethod
     def ping(port, host=socket.gethostname()):
@@ -112,7 +110,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             return False
 
     @staticmethod
-    def generate_id(port, host, group):
+    def generate_id(port, host, group=None):
         """
         Generate a peers id.
 
@@ -121,11 +119,12 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         :param group: str
         :return: base64
         """
+
         return base64.b64encode(
             '{host}:{port} -> {group}'.format(
                 host=socket.gethostname() if not host else host,
                 port=port,
-                group=group,
+                group=str(group),
             ).encode('ascii')
         )
 
@@ -145,41 +144,6 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             'host': expr['host'],
             'port': int(expr['port'])
         }
-
-    def scan_for_port(self):
-        """
-        Scan for a free port to bind to. You can override the default port range and search range by setting the
-        environment variables NET_PORT NET_PORT_RANGE.
-
-        Port range:
-            default 3010-3050
-
-        :return: int
-        """
-        # cast as int and default to 3010 and 40
-        port = int(os.environ.setdefault("NET_PORT", "3010"))
-        port_range = port + int(os.environ.setdefault("NET_PORT_RANGE", "40"))
-
-        LOGGER.debug("Scanning {0} ports for open port...".format(port_range - port))
-        while port <= port_range:
-
-            # ping the local host ports
-            if not self.ping(port):
-                try:
-                    super(_Peer, self).__init__((self.host, port), PeerHandler)
-                    LOGGER.debug("Found Port: {0}".format(termcolor.colored(port, "green")))
-                    break
-                except (OSError, ConnectionRefusedError):
-                    LOGGER.warning("Stale Port: {0}".format(termcolor.colored(port, "yellow")))
-
-            port += 1
-
-        # throw error if there is no open port
-        if port > port_range:
-            raise ValueError("No open port found between {0} - {1}".format(port, port_range))
-
-        # return found port
-        return port
 
     @classmethod
     def build_connection_name(cls, connection):
@@ -211,16 +175,33 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         """
         if not tag:
             tag = cls.build_connection_name(connection)
+        else:
+            tag = cls.encode(tag)
 
         # add the connection to the connection registry.
         if tag in cls.CONNECTIONS:
-            LOGGER.warning(
+            net.LOGGER.warning(
                 "Redefining a connection handler. Be aware, this could cause "
                 "unexpected results."
             )
         cls.CONNECTIONS[tag] = connection
 
         return tag
+
+    @classmethod
+    def register_subscriber(cls, event, peer, connection):
+        """
+        Registers the peer and connection to the peers subscription system. This
+        is for internal use only, use the ``net.subscribe`` decorator instead.
+
+        :param event: event id
+        :param peer: peer id
+        :param connection: connection id
+        :return: None
+        """
+        subscription = cls.SUBSCRIPTIONS.setdefault(event, {})
+        peer_connection = subscription.setdefault(peer, [])
+        peer_connection.append(connection)
 
     @classmethod
     def register_flag(cls, flag, handler):
@@ -245,7 +226,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         flag = base64.b64encode(flag.encode('ascii'))
 
         if flag in cls.FLAGS:
-            LOGGER.warning(
+            net.LOGGER.warning(
                 "Redefining a flag handler. Be aware, this could cause "
                 "unexpected results."
             )
@@ -295,9 +276,10 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             )
 
         # find port
-        self._host = socket.gethostname()
+        self._host = net.HOST_IP
         self._port = self.scan_for_port()
-        self._group = str(os.environ.get('NET_GROUP') if not group else group)
+        self._group = net.GROUP if not group else group
+        self._is_hub = net.IS_HUB
 
         # handle threading
         self._thread = threading.Thread(target=self.serve_forever)
@@ -306,6 +288,16 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # launch the peer
         if launch:
             self.launch()
+
+    @property
+    def hub(self):
+        """
+        Defines if this peer acts as the hub for communication through the
+        network.
+
+        :return: bool
+        """
+        return self._is_hub
 
     @property
     def group(self):
@@ -355,7 +347,44 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             peer_id = self.id
 
         # decode and hand back
-        return self.decode_id(peer_id)
+        friendly = self.decode_id(peer_id)
+        friendly['hub'] = self._is_hub
+        return friendly
+
+    def scan_for_port(self):
+        """
+        Scan for a free port to bind to. You can override the default port range and search range by setting the
+        environment variables NET_PORT NET_PORT_RANGE.
+
+        Port range:
+            default 3010-3050
+
+        :return: int
+        """
+        # cast as int and default to 3010 and 40
+        port = net.PORT_START
+        port_range = port + net.PORT_RANGE
+
+        net.LOGGER.debug("Scanning {0} ports for open port...".format(port_range - port))
+        while port <= port_range:
+
+            # ping the local host ports
+            if not self.ping(port):
+                try:
+                    super(_Peer, self).__init__((self.host, port), PeerHandler)
+                    net.LOGGER.debug("Found Port: {0}".format(termcolor.colored(port, "green")))
+                    break
+                except (OSError, ConnectionRefusedError):
+                    net.LOGGER.warning("Stale Port: {0}".format(termcolor.colored(port, "yellow")))
+
+            port += 1
+
+        # throw error if there is no open port
+        if port > port_range:
+            raise ValueError("No open port found between {0} - {1}".format(port, port_range))
+
+        # return found port
+        return port
 
     def launch(self):
         """
@@ -395,11 +424,23 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # connect
         sock.connect(peer)
 
-        # send request
-        sock.sendall(self.encode(payload))
+        try:
+            # send request
+            sock.sendall(self.encode(payload))
 
-        # sock
-        raw = sock.recv(1024)
+            # sock
+            raw = sock.recv(1024)
+
+            # safely close the socket
+            sock.close()
+
+        except Exception as err:
+            # safely close the socket
+            sock.close()
+
+            # handle error logging
+            net.LOGGER.error(traceback.format_exc())
+            raise err
 
         # handle flags
         processor = self.process_flags(raw)
@@ -418,6 +459,30 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
 
         # decode and return final response
         return self.decode(raw)
+
+    def trigger_event(self, event, *args, **kwargs):
+        """
+        Registers the peer and connection to the peers subscription system. This
+        is for internal use only, use the ``net.subscribe`` decorator instead.
+
+        :param event: event id
+        :param args: args to pass to the subscribed connections
+        :param kwargs: args to pass to the subscribed connections
+        :return: None
+        """
+        event = self.SUBSCRIPTIONS.get(event)
+
+        if not event:
+            raise Exception(
+                "Invalid Event. Registered Events:\n" + '\n'.join(
+                    sorted(self.SUBSCRIPTIONS.keys())
+                )
+            )
+
+        # loop over the peers
+        for peer, connections in event.items():
+            for connection in connections:
+                self.request(peer, connection, args, kwargs)
 
 
 # noinspection PyPep8Naming

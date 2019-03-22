@@ -106,22 +106,4 @@ def test_api():
     """
     net.LOGGER.debug("Test Header")
 
-    assert net.get_peers(_test_bypass_threading=True) == net.get_peers()
-
-
-def test_none_threaded_api():
-    """
-    Test api functions
-    """
-    net.LOGGER.debug("Test Header")
-
-    assert len(net.get_peers(_test_bypass_threading=True)) == 2
-
-
-def test_threaded_api():
-    """
-    Test api functions
-    """
-    net.LOGGER.debug("Test Header")
-
-    assert len(net.get_peers()) == 2
+    assert len(net.peers()) == 0

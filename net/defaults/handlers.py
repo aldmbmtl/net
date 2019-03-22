@@ -9,7 +9,8 @@ Prebuilt connected handlers for net. Do not modify.
 __all__ = [
     'info',
     'pass_through',
-    'null'
+    'null',
+    'subscription_handler'
 ]
 
 # package imports
@@ -48,3 +49,18 @@ def null(*args, **kwargs):
     :return: NULL Flag
     """
     return Peer().get_flag("NULL")
+
+
+@connect()
+def subscription_handler(event, peer, connection):
+    """
+    Will register the incoming peer and connection with the local peers
+    subscription of the event passed. This is for internal use only.
+
+    :param event: event id
+    :param peer: foreign peer id
+    :param connection: connection id
+    """
+    peer = str(peer.split("'")[1]).encode('ascii')
+    connection = str(connection.split("'")[1]).encode('ascii')
+    Peer().register_subscriber(event, peer, connection)
