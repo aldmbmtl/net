@@ -2,12 +2,14 @@ app-net
 =======
 
 ![PyPI](https://img.shields.io/pypi/v/net.svg)
-![PyLint](https://mperlet.github.io/pybadge/badges/8.52.svg)
-![Travis](https://img.shields.io/travis/aldmbmtl/net.svg)
-![Documentation Status](https://readthedocs.org/projects/net/badge/?version=latest)
-![PyUp](https://pyup.io/repos/github/aldmbmtl/net/shield.svg)
-![Python 3](https://pyup.io/repos/github/aldmbmtl/net/python-3-shield.svg)
 ![License](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)
+
+![Python 3](https://pyup.io/repos/github/aldmbmtl/net/python-3-shield.svg)
+![PyLint](https://mperlet.github.io/pybadge/badges/8.52.svg)
+![Coverage](./coverage.svg)
+![Travis](https://img.shields.io/travis/aldmbmtl/net.svg)
+![PyUp](https://pyup.io/repos/github/aldmbmtl/net/shield.svg)
+![Documentation Status](https://readthedocs.org/projects/net/badge/?version=latest)
 
 Pure python peer-to-peer interfacing framework. Define functions that
 can be executed from within the running instance of python, just like a

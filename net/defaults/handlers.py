@@ -72,6 +72,11 @@ def subscription_handler(event, peer, connection):
     :param peer: foreign peer id
     :param connection: connection id
     """
-    peer = str(peer.split("'")[1]).encode('ascii')
-    connection = str(connection.split("'")[1]).encode('ascii')
+    # handles strings with b'' wrapping them.
+    try:
+        peer = str(peer.split("'")[1]).encode('ascii')
+        connection = str(connection.split("'")[1]).encode('ascii')
+    except IndexError:
+        pass
+
     Peer().register_subscriber(event, peer, connection)

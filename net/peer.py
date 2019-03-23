@@ -412,7 +412,11 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # package up the request, by default delete the peer argument in the kwargs.
         if kwargs.get("peer"):
             del kwargs['peer']
-        payload = {'connection': connection.decode('ascii'), 'args': args, 'kwargs': kwargs}
+
+        if not isinstance(connection, str):
+            connection = connection.decode('ascii')
+
+        payload = {'connection': connection, 'args': args, 'kwargs': kwargs}
 
         # socket connection
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
