@@ -4,8 +4,14 @@ from __future__ import print_function
 
 """Tests for `net` package."""
 
+# std imports
+import os
+import sys
+
 # testing
 import pytest
+
+sys.path.append(os.path.abspath(__file__ + '/../../'))
 
 # package
 import net
@@ -106,4 +112,4 @@ def test_api():
     """
     net.LOGGER.debug("Test Header")
 
-    assert len(net.peers()) == 0
+    assert len(net.peers()) == 1

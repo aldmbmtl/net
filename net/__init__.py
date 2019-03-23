@@ -18,6 +18,7 @@ __all__ = [
     'IS_HUB',
     'subscribe',
     'HOST_IP',
+    'event'
 ]
 
 __author__ = 'Alex Hatfield'
@@ -29,5 +30,6 @@ from .peer import *
 from .flag import *
 from .connect import *
 from .subscribe import *
+from .event import *
 from .api import *
 from .defaults import *

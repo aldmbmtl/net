@@ -28,7 +28,48 @@ def connect(tag=None):
     """
     Registers a function as a connection. This will be tagged and registered
     with the Peer server. The tag is a base64 encoded path to the function or
-    can be manually tagged with the tag parameter.
+    can be manually tagged with the tag parameter. Tagging a named function
+    allows you to interconnect functions between code bases.
+
+    For example, a connected function with no tag is tied to the
+    ``func.__module__`` + ``func.__name__``. This means the peers will only know
+    which functions are compatible based on the namespace staying the same.
+
+    .. code-block:: python
+
+        # app version 1 running on PeerA
+        app/
+          module/
+            function
+
+        # app version 2 running on PeerB
+        app/
+          module/
+            function2 <- # renamed from function
+
+    In the above example, PeerA could make a request to PeerB to execute
+    "app.module.function". But that function no longer exists as far as PeerB is
+    concerned. The source code and functionality could be exactly the same, but
+    the logical location is different and therefore will fail.
+
+    .. code-block:: python
+
+        # app version 1 running on PeerA
+        app/
+          module/
+            function (tagged: "MyTaggedFunction")
+
+        # app version 2 running on PeerB
+        app/
+          module/
+            function2 (tagged: "MyTaggedFunction")
+
+    In the above example, we have tagged function and function2 with the same
+    tag, "MyTaggedFunction". Now when PeerA requests to execute, it will request
+    that PeerB executes "MyTaggedFunction" which is attached to the new renamed
+    function.
+
+    Standard no tagging
 
     .. code-block:: python
 
@@ -36,6 +77,13 @@ def connect(tag=None):
         def your_function(some_value):
             return some_value
 
+    Custom tagging
+
+    .. code-block:: python
+
+        @net.connect("MyTaggedFunction")
+        def your_function(some_value):
+            return some_value
     """
     def wrapper(func):
         # register the function with the peer handler

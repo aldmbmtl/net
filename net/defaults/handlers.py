@@ -23,6 +23,10 @@ def info(*args, **kwargs):
     """
     Return information about the peer requested.
 
+    .. code-block:: python
+
+        friendly_information = net.info(peer='somepeer')
+
     :return: peer.friendly_id
     """
     return Peer().friendly_id
@@ -32,7 +36,14 @@ def info(*args, **kwargs):
 @connect()
 def pass_through(*args, **kwargs):
     """
-    Used for testing, takes your arguments and passes them back for type testing.
+    Used for testing, takes your arguments and passes them back for type
+    testing.
+
+    .. code-block:: python
+
+        variable = "Test this comes back the way I sent it."
+
+        response = net.pass_through(variable, peer='somepeer')
 
     :return: *args, **kwargs
     """
