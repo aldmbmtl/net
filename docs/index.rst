@@ -10,7 +10,6 @@ Welcome to net's documentation!
    usage
    api
    contributing
-   history
 
 Indices and tables
 ==================
