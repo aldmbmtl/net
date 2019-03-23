@@ -23,7 +23,7 @@ __all__ = [
 
 __author__ = 'Alex Hatfield'
 __email__ = 'alex@hatfieldfx.com'
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 
 from .environment import *
 from .peer import *
