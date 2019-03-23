@@ -32,7 +32,7 @@ app-net
     :target: https://github.com/Naereen/StrapDown.js/blob/master/LICENSE
     :alt: MIT License
 
-.. image:: https://mperlet.github.io/pybadge/badges/8.41.svg
+.. image:: https://mperlet.github.io/pybadge/badges/8.34.svg
     :alt: PyLint
 
 

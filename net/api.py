@@ -12,7 +12,6 @@ __all__ = [
 ]
 
 # std imports
-import os
 import math
 import socket
 import struct
@@ -24,27 +23,6 @@ import net
 # local imports
 from net.imports import ConnectionRefusedError, PermissionError
 
-
-# host name
-DEFAULT = socket.gethostbyname(socket.gethostname()).rsplit('.', 1)[0] + '.0'
-
-# thread limit
-THREAD_LIMIT = os.environ.get("NETWORK_THREAD_LIMIT")
-if not THREAD_LIMIT:
-    THREAD_LIMIT = 5
-
-# subnet IP
-SUBNET_IP = os.environ.get("SUBNET")
-if not SUBNET_IP:
-    SUBNET_IP = DEFAULT
-
-# subnet masking
-SUBNET_MASK = os.environ.get("SUBNET_MASK")
-if not SUBNET_MASK:
-    SUBNET_MASK = '25'
-
-# subnet CIDR block
-SUBNET_CIDR = "{0}/{1}".format(SUBNET_IP, SUBNET_MASK)
 
 # threading
 LOCK = threading.Lock()
@@ -133,12 +111,12 @@ def get_peers(groups=None, _test_bypass_threading=False):
         groups = [peer.group]
 
     # create subnet
-    network = generate_network(ip=SUBNET_IP, cidr=SUBNET_MASK)
+    network = generate_network(ip=net.SUBNET_IP, cidr=net.SUBNET_MASK)
 
     # logging help
     total_hosts = len(network)
     total_ports = len(peer.ports())
-    total_threads = int(THREAD_LIMIT)
+    total_threads = net.THREAD_LIMIT
     net.LOGGER.debug(
         "Calculated network sweep: {0} hosts X {1} ports = {2} pings".format(
             total_hosts, total_ports, total_hosts * total_ports
