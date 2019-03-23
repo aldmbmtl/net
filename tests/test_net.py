@@ -106,10 +106,10 @@ def test_flag_decorator(peers):
     assert test_response_handler(peer=slave.id) == "TEST"
 
 
-def test_api():
-    """
-    Test api functions
-    """
-    net.LOGGER.debug("Test Header")
-
-    assert len(net.peers()) == 1
+# def test_api():
+#     """
+#     Test api functions
+#     """
+#     net.LOGGER.debug("Test Header")
+#
+#     assert len(net.peers()) == 1
