@@ -14,12 +14,10 @@ __all__ = [
     'LOGGER',
     'PORT_RANGE',
     'PORT_START',
-    'SUBNET_CIDR',
-    'SUBNET_MASK',
-    'SUBNET_IP',
     'GROUP',
-    'IS_SERVER',
-    'subscribe'
+    'IS_HUB',
+    'subscribe',
+    'HOST_IP',
 ]
 
 __author__ = 'Alex Hatfield'

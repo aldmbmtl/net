@@ -8,16 +8,13 @@ Contains the peer handler and should have nothing else.
 
 __all__ = [
     'THREAD_LIMIT',
-    'HOST_NAME',
-    'SUBNET_IP',
-    'SUBNET_MASK',
-    'SUBNET_CIDR',
     'PORT_RANGE',
     'PORT_START',
     'LOGGER',
     'DEV_MODE',
     'GROUP',
-    'IS_SERVER'
+    'IS_HUB',
+    'HOST_IP'
 ]
 
 # std imports
@@ -29,16 +26,13 @@ from logging import getLogger, StreamHandler, Formatter, DEBUG
 THREAD_LIMIT = int(os.environ.setdefault("NET_THREAD_LIMIT", "5"))
 
 # networking
-HOST_NAME = socket.gethostbyname(socket.gethostname()).rsplit('.', 1)[0] + '.0'
-SUBNET_IP = os.environ.setdefault("NET_SUBNET", HOST_NAME)
-SUBNET_MASK = os.environ.setdefault("NET_SUBNET_MASK", '25')
-SUBNET_CIDR = "{0}/{1}".format(SUBNET_IP, SUBNET_MASK)
+HOST_IP = socket.gethostbyname(socket.gethostname())
 PORT_START = int(os.environ.setdefault("NET_PORT", "3010"))
-PORT_RANGE = int(os.environ.setdefault("NET_PORT_RANGE", "10"))
+PORT_RANGE = int(os.environ.setdefault("NET_PORT_RANGE", "5"))
 
 # peer configuration
 GROUP = str(os.environ.get("NET_GROUP"))
-IS_SERVER = os.environ.get("NET_IS_SERVER") is not None
+IS_HUB = os.environ.get("NET_IS_HUB") is not None
 
 
 # handle development environment

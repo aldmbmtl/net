@@ -110,7 +110,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             return False
 
     @staticmethod
-    def generate_id(port, host, group):
+    def generate_id(port, host, group=None):
         """
         Generate a peers id.
 
@@ -119,11 +119,12 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         :param group: str
         :return: base64
         """
+
         return base64.b64encode(
             '{host}:{port} -> {group}'.format(
                 host=socket.gethostname() if not host else host,
                 port=port,
-                group=group,
+                group=str(group),
             ).encode('ascii')
         )
 
@@ -275,10 +276,10 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             )
 
         # find port
-        self._host = socket.gethostname()
+        self._host = net.HOST_IP
         self._port = self.scan_for_port()
         self._group = net.GROUP if not group else group
-        self._is_server = net.IS_SERVER
+        self._is_hub = net.IS_HUB
 
         # handle threading
         self._thread = threading.Thread(target=self.serve_forever)
@@ -287,6 +288,16 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # launch the peer
         if launch:
             self.launch()
+
+    @property
+    def hub(self):
+        """
+        Defines if this peer acts as the hub for communication through the
+        network.
+
+        :return: bool
+        """
+        return self._is_hub
 
     @property
     def group(self):
@@ -336,7 +347,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             peer_id = self.id
 
         # decode and hand back
-        return self.decode_id(peer_id)
+        friendly = self.decode_id(peer_id)
+        friendly['hub'] = self._is_hub
+        return friendly
 
     def scan_for_port(self):
         """
@@ -411,11 +424,23 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # connect
         sock.connect(peer)
 
-        # send request
-        sock.sendall(self.encode(payload))
+        try:
+            # send request
+            sock.sendall(self.encode(payload))
 
-        # sock
-        raw = sock.recv(1024)
+            # sock
+            raw = sock.recv(1024)
+
+            # safely close the socket
+            sock.close()
+
+        except Exception as err:
+            # safely close the socket
+            sock.close()
+
+            # handle error logging
+            net.LOGGER.error(traceback.format_exc())
+            raise err
 
         # handle flags
         processor = self.process_flags(raw)

@@ -7,15 +7,14 @@ Contains the general network interactions for net.
 """
 
 __all__ = [
-    'get_peers',
-    'find_peers_in_block'
+    'peers'
 ]
 
 # std imports
+import re
 import math
-import socket
-import struct
 import threading
+import subprocess
 
 # package imports
 import net
@@ -26,27 +25,61 @@ from net.imports import ConnectionRefusedError, PermissionError
 
 # threading
 LOCK = threading.Lock()
+IP_REGEX = re.compile(r'\d+\.\d+\.\d\.\d+')
 
 
-def generate_network(ip, cidr):
+# cache
+PEERS = None
+
+
+def peers(refresh=False, groups=None):
     """
-    Generate a set of ip addresses bases on the cidr network passed
+    Get a list of all peers on your network. This is a cached values since the
+    call to graph the network can be long.
 
-    :param ip:
-    :param cidr:
-    :return: list of ips
+    The initial call to this will hang for a few seconds. Under the hood, it is
+    making a shell call to ``arp -a`` which will walk your network and find all
+    hosts.
+
+    Standard call to get the peers on your network.
+
+    .. code-block:: python
+
+        all_peers = net.peers()
+
+    Refresh all peers in the cache
+
+    .. code-block:: python
+
+        all_peers = net.peers(refresh=True)
+
+    Refresh the cache with peers in group1
+
+    .. code-block:: python
+
+        all_peers = net.peers("group1", refresh=True)
+
+    :param refresh: Bool
+    :param groups: str
+    :return:
     """
-    host_bits = 32 - int(cidr)
-    i = struct.unpack('>I', socket.inet_aton(ip))[0]
-    start = (i >> host_bits) << host_bits
-    end = start | (1 << host_bits)
+    if PEERS is None or refresh:
+        get_peers(groups)
 
-    return [
-        socket.inet_ntoa(struct.pack('>I', address)) for address in range(start, end)
-    ]
+    return PEERS
 
 
-def find_peers_in_block(ips, groups=[], _shared_array=None):
+def local_network():
+    """
+    Runs ``arp -a`` to get all hosts.
+
+    :return: list of ip address on the local network
+    """
+    raw_output = bytes(subprocess.check_output('arp -a', shell=True)).decode('ascii')
+    return IP_REGEX.findall(raw_output)
+
+
+def find_peers_in_block(ips, groups=None):
     """
     Sniffs out peers in the defined group based on the list of ip's
 
@@ -55,7 +88,7 @@ def find_peers_in_block(ips, groups=[], _shared_array=None):
      same as the current peer.
     :return: List of peer addresses
     """
-    peers = []
+    global PEERS
 
     if not groups:
         groups = [net.Peer().group]
@@ -71,6 +104,8 @@ def find_peers_in_block(ips, groups=[], _shared_array=None):
 
                 # generate the peer
                 foreign_peer_id = net.Peer().generate_id(port, address, group)
+                if foreign_peer_id == net.Peer().id:
+                    continue
 
                 try:
                     # ping the peer and if it responds with the proper info,
@@ -78,30 +113,25 @@ def find_peers_in_block(ips, groups=[], _shared_array=None):
                     # the console.
 
                     net.LOGGER.disabled = True
-                    net.info(peer=foreign_peer_id, time_out=0.005)
+                    info = net.info(peer=foreign_peer_id, time_out=0.1)
                     net.LOGGER.disabled = False
 
-                    peers.append(foreign_peer_id)
+                    LOCK.acquire()
+                    PEERS[foreign_peer_id] = info
+                    LOCK.release()
                 except (PermissionError, ConnectionRefusedError, OSError):
                     net.LOGGER.disabled = False
 
-    if _shared_array is not None:
 
-        LOCK.acquire()
-        _shared_array.extend(peers)
-        LOCK.release()
-
-    return peers
-
-
-def get_peers(groups=None, _test_bypass_threading=False):
+def get_peers(groups=None):
     """
     Get a list of all valid remote peers.
 
     :param groups: List of groups
     :return: List of peer addresses
     """
-    peers = []
+    global PEERS
+    PEERS = {}
 
     # get this peer for pinging
     peer = net.Peer()
@@ -111,7 +141,7 @@ def get_peers(groups=None, _test_bypass_threading=False):
         groups = [peer.group]
 
     # create subnet
-    network = generate_network(ip=net.SUBNET_IP, cidr=net.SUBNET_MASK)
+    network = local_network()
 
     # logging help
     total_hosts = len(network)
@@ -124,7 +154,7 @@ def get_peers(groups=None, _test_bypass_threading=False):
     )
 
     # skip the threading integration if the environment does not call for it.
-    if total_threads <= 0 or _test_bypass_threading:
+    if total_threads <= 0:
         return find_peers_in_block(network, groups)
 
     # calculate thread chunk
@@ -140,7 +170,7 @@ def get_peers(groups=None, _test_bypass_threading=False):
         # spawn thread with network chunk calculated.
         thread = threading.Thread(
             target=find_peers_in_block,
-            args=(network[start:end], groups, peers)
+            args=(network[start:end], groups)
         )
         thread.daemon = True
         threads.append(thread)
@@ -152,4 +182,4 @@ def get_peers(groups=None, _test_bypass_threading=False):
     for thread in threads:
         thread.join()
 
-    return peers
+    return PEERS

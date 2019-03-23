@@ -72,7 +72,7 @@ def connect(tag=None):
                 return peer.decode(response)
 
             encoded_address = kwargs.get('peer')
-            remote_peer_address = str(peer.decode_id(encoded_address))
+            remote_peer_address = peer.decode_id(encoded_address)
             LOGGER.debug("{0} execution on {1}".format(
                 colored("Remote", 'blue', attrs=['bold']),
                 colored(remote_peer_address, 'magenta'))
