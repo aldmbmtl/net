@@ -41,6 +41,13 @@ def invalid_connection(connection, foreign_peer_id):
     :param foreign_peer_id: The foreign peers friendly_id
     :return:
     """
+    location = "Unknown"
+    if not isinstance(connection, str):
+        try:
+            location = base64.b64decode(connection).decode('ascii')
+        except TypeError:
+            pass
+
     raise Exception(
         "Peer does not have the connection you are requesting.\n\t"
         "Peer: {0}@{1}\n\t"
@@ -48,6 +55,6 @@ def invalid_connection(connection, foreign_peer_id):
             foreign_peer_id['host'],
             foreign_peer_id['port'],
             connection,
-            base64.b64decode(connection).decode('ascii')
+            location
         )
     )

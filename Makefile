@@ -63,6 +63,7 @@ coverage: ## check code coverage quickly with the default Python
 	coverage run --source net -m pytest
 	coverage report -m
 	coverage html
+	coverage-badge -f -o coverage.svg
 	$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs

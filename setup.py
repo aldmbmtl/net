@@ -8,11 +8,8 @@ from setuptools import setup, find_packages
 root = os.path.dirname(__file__)
 
 
-with open('README.rst') as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
-
-with open('HISTORY.rst') as history_file:
-    history = history_file.read()
 
 requirements = ['Click>=6.0', ]
 setup_requirements = ['pytest-runner', ]
@@ -42,7 +39,8 @@ setup(
     },
     install_requires=requirements,
     license="MIT license",
-    long_description=readme + '\n\n' + history,
+    long_description=readme,
+    long_description_content_type='text/markdown',
     include_package_data=True,
     keywords='app-net',
     name='app-net',
@@ -51,6 +49,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/aldmbmtl/net',
-    version='0.2.0',
+    version='0.3.5',
     zip_safe=False,
 )

@@ -21,7 +21,7 @@ print(report)
 with open(os.path.join(ROOT, 'lint.log'), 'w') as score_file:
     score_file.write(report)
 
-readme = os.path.join(ROOT, 'README.rst')
+readme = os.path.join(ROOT, 'README.md')
 with open(readme, 'r') as README:
     content = README.read()
 

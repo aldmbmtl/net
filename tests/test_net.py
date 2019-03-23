@@ -5,13 +5,10 @@ from __future__ import print_function
 """Tests for `net` package."""
 
 # std imports
-import os
-import sys
+import traceback
 
 # testing
 import pytest
-
-sys.path.append(os.path.abspath(__file__ + '/../../'))
 
 # package
 import net
@@ -75,13 +72,50 @@ def test_connect_decorator(peers):
     for case in test_cases:
         assert net.pass_through(case) == net.pass_through(case, peer=slave.id)
 
+    # test local flag handling
+    assert net.pass_through(master.get_flag('NULL')) == 'NULL'
+
+
+def test_peer_handle(peers):
+    """
+    Tests that the peer is handling incoming requests correctly.
+    """
+    master, slave = peers
+
+    try:
+        master.request(slave.id, 'missing_connection', (), {})
+        pytest.fail('Invalid connection is not being handled correctly.')
+    except Exception as err:
+        assert "Peer does not have the connection you are requesting" in traceback.format_exc()
+
+
+def test_subscription(peers):
+    """
+    Tests the subscription system
+    """
+    net.LOGGER.debug("Test Header")
+
+    master, slave = peers
+
+    assert slave.SUBSCRIPTIONS == {}
+
+    @net.subscribe('test_event', slave.id)
+    def subscribe_test(test_case):
+        return test_case
+
+    assert slave.SUBSCRIPTIONS != {}
+
+    @net.event('test_event')
+    def event_test(*args, **kwargs):
+        return args, kwargs
+
+    event_test('testing')
+
 
 def test_flag_decorator(peers):
     """
     Test the connect decorator
     """
-    net.LOGGER.debug("Test Header")
-
     master, slave = peers
 
     # define the testing connection handler
@@ -106,10 +140,21 @@ def test_flag_decorator(peers):
     assert test_response_handler(peer=slave.id) == "TEST"
 
 
-# def test_api():
-#     """
-#     Test api functions
-#     """
-#     net.LOGGER.debug("Test Header")
-#
-#     assert len(net.peers()) == 1
+def test_api():
+    """
+    Test api functions
+    """
+    net.LOGGER.debug("Test Header")
+
+    # test peer look up
+    net.peers()
+    net.peers(groups=['group1'])
+
+    # test non-threaded
+    net.THREAD_LIMIT = 0
+
+    net.peers()
+    net.peers(groups=['group1'])
+
+    # test non-threaded
+    net.THREAD_LIMIT = 5
