@@ -6,7 +6,7 @@ ROOT = os.path.abspath(__file__ + '/../../')
 reg_ex = re.compile(r'at ([0-9].+)/10 ')
 
 process = Popen(
-    'pylint net',
+    'pylint --ignore=[__init__.py] net',
     shell=True,
     stdout=PIPE,
     stderr=PIPE,
@@ -21,7 +21,7 @@ print(report)
 with open(os.path.join(ROOT, 'lint.log'), 'w') as score_file:
     score_file.write(report)
 
-readme = os.path.join(ROOT, 'README.rst')
+readme = os.path.join(ROOT, 'README.md')
 with open(readme, 'r') as README:
     content = README.read()
 

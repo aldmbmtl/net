@@ -85,15 +85,16 @@ def connect(tag=None):
         def your_function(some_value):
             return some_value
     """
+
     def wrapper(func):
+        # grab the local peer
+        peer = Peer()
+
         # register the function with the peer handler
-        connection_name = _Peer.register_connection(tag if tag else func)
+        connection_name = peer.register_connection(func, tag if tag else None)
 
         @wraps(func)
         def interface(*args, **kwargs):
-            # grab the local peer
-            peer = Peer()
-
             # execute the function as is if this is being run by the local peer
             if not kwargs.get('peer'):
                 LOGGER.debug("{0} execution on {1}".format(

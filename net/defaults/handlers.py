@@ -5,20 +5,20 @@ Default Connected Handlers
 
 Prebuilt connected handlers for net. Do not modify.
 """
+# package imports
+import net
 
 __all__ = [
     'info',
     'pass_through',
     'null',
-    'subscription_handler'
+    'subscription_handler',
+    'connections'
 ]
-
-# package imports
-from net import connect, Peer
 
 
 # basic descriptor
-@connect()
+@net.connect()
 def info(*args, **kwargs):
     """
     Return information about the peer requested.
@@ -29,11 +29,35 @@ def info(*args, **kwargs):
 
     :return: peer.friendly_id
     """
-    return Peer().friendly_id
+    return net.Peer().friendly_id
+
+
+# basic connection descriptor
+@net.connect()
+def connections(*args, **kwargs):
+    """
+    Return the connections registered with the peer.
+
+    .. code-block:: python
+
+        friendly_information = net.connections(peer='somepeer')
+
+    :return: peer.CONNECTIONS
+    """
+    connections = net.Peer().CONNECTIONS
+
+    return 'Connections on {1}:\n\t{0}'.format(
+        '\n\n\t'.join(
+            [
+                '{0}\n\t\t{1}'.format(key, connections[key]) for key in connections.keys()
+            ]
+        ),
+        net.Peer().friendly_id
+    )
 
 
 # utilities
-@connect()
+@net.connect()
 def pass_through(*args, **kwargs):
     """
     Used for testing, takes your arguments and passes them back for type
@@ -52,17 +76,17 @@ def pass_through(*args, **kwargs):
     return args, kwargs
 
 
-@connect()
+@net.connect()
 def null(*args, **kwargs):
     """
     Return a null response flag
 
     :return: NULL Flag
     """
-    return Peer().get_flag("NULL")
+    return net.Peer().get_flag("NULL")
 
 
-@connect()
+@net.connect()
 def subscription_handler(event, peer, connection):
     """
     Will register the incoming peer and connection with the local peers
@@ -79,4 +103,4 @@ def subscription_handler(event, peer, connection):
     except IndexError:
         pass
 
-    Peer().register_subscriber(event, peer, connection)
+    net.Peer().register_subscriber(event, peer, connection)

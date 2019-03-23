@@ -60,7 +60,7 @@ test-all: ## run tests on every Python version with tox
 	tox
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source net -m pytest
+	coverage run --source net --omit net/cli.py -m pytest
 	coverage report -m
 	coverage html
 	coverage-badge -f -o coverage.svg

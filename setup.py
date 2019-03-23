@@ -49,6 +49,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/aldmbmtl/net',
-    version='0.3.5',
+    version='0.4.0',
     zip_safe=False,
 )

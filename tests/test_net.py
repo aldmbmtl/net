@@ -36,8 +36,13 @@ def test_peer_construct(peers):
     master, slave = peers
 
     assert master.port != slave.port
+    assert not master.hub
     assert slave.ping(master.port, master.host) is True
     assert master.ping(slave.port, slave.host) is True
+
+    with pytest.raises(RuntimeError):
+        # this should fail so the user doesnt try to overwrite the running peer.
+        net.peer._Peer()
 
 
 def test_connect_decorator(peers):
@@ -72,8 +77,26 @@ def test_connect_decorator(peers):
     for case in test_cases:
         assert net.pass_through(case) == net.pass_through(case, peer=slave.id)
 
-    # test local flag handling
+    # test that pass_through will allow both args and kwargs
+    assert net.pass_through(
+        "this",
+        "is",
+        a_test="case"
+    ) == net.pass_through(
+        "this",
+        "is",
+        a_test="case",
+        peer=slave.id
+    )
+
+    # test the default handlers
     assert net.pass_through(master.get_flag('NULL')) == 'NULL'
+    assert net.null() == "NULL"
+    assert net.null(peer=slave.id) == "NULL"
+
+    # test that connection requests work
+    net.connections()
+    net.connections(peer=slave.id)
 
 
 def test_peer_handle(peers):
@@ -99,7 +122,7 @@ def test_subscription(peers):
 
     assert slave.SUBSCRIPTIONS == {}
 
-    @net.subscribe('test_event', slave.id)
+    @net.subscribe('test_event', peers=slave.id)
     def subscribe_test(test_case):
         return test_case
 
@@ -148,13 +171,15 @@ def test_api():
 
     # test peer look up
     net.peers()
-    net.peers(groups=['group1'])
+    net.peers(groups=['group1'], refresh=True)
+    net.peers(on_host=True, refresh=True)
 
     # test non-threaded
     net.THREAD_LIMIT = 0
 
     net.peers()
-    net.peers(groups=['group1'])
+    net.peers(groups=['group1'], refresh=True)
+    net.peers(on_host=True, refresh=True)
 
     # test non-threaded
     net.THREAD_LIMIT = 5
