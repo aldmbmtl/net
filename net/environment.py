@@ -11,7 +11,7 @@ __all__ = [
     'PORT_RANGE',
     'PORT_START',
     'LOGGER',
-    'DEV_MODE',
+    'DEV',
     'GROUP',
     'IS_HUB',
     'HOST_IP'
@@ -36,7 +36,7 @@ IS_HUB = os.environ.get("NET_IS_HUB") is not None
 
 
 # handle development environment
-DEV_MODE = os.environ.get("HFX_DEV")
+DEV = os.environ.get("NET_DEV")
 
 # configure logger
 LOGGER = getLogger('net')
@@ -45,5 +45,5 @@ LOGGER_HANDLER = StreamHandler()
 LOGGER.addHandler(LOGGER_HANDLER)
 LOGGER_HANDLER.setFormatter(Formatter("%(name)s:%(levelname)s\t%(message)s"))
 
-if DEV_MODE:
+if DEV:
     LOGGER.setLevel(DEBUG)
