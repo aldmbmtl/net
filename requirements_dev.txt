@@ -8,3 +8,5 @@ pytest
 pytest-runner
 pylint
 coverage-badge
+click
+termcolor
