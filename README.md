@@ -5,7 +5,7 @@ app-net
 ![License](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)
 ![Python 3](https://pyup.io/repos/github/aldmbmtl/net/python-3-shield.svg)
 ![Travis](https://img.shields.io/travis/aldmbmtl/net.svg)
-![Coverage](./coverage.svg)
+![Coverage](https://github.com/aldmbmtl/net/raw/master/coverage.svg?sanitize=true)
 ![PyLint](https://mperlet.github.io/pybadge/badges/8.45.svg)
 ![PyUp](https://pyup.io/repos/github/aldmbmtl/net/shield.svg)
 ![Documentation Status](https://readthedocs.org/projects/net/badge/?version=latest)
