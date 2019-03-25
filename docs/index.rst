@@ -8,6 +8,7 @@ Welcome to net's documentation!
    readme
    installation
    usage
+   examples/examples
    api
    contributing
 

@@ -24,53 +24,22 @@ were on a different host.
 
 A Basic Example
 ---------------
-Each connected function is registered using the functions ``func.__module__`` and ``func.__name__``
-attributes and then encoded into base64 for easier transit between peers. This connection
-identifier is called a "tag". So, when Peer1 wants to execute a function on Peer2, it will send
-a JSON request that has the args, kwargs and the tag. The tag is then used to find the function
-in Peer2's registry and then pass the args and kwargs to that function. If it succeeds, the
-result is sent back to Peer1. If not, the traceback is captured and sent back and Peer1 will
-throw a matching error.
 
-We are going to write a very simple application that will multiply 2 values together.
-Then we will flag this function as a "connect" function. Then we will launch 2 instances on our
-local host, and trigger execution calls between the instances.
+This is a very simple example of an application running on 2 different peers and communicating
+through a shared coding contract, the application itself.
 
-Firstly, we will define a our basic multiply function. Then we will flag it with the
-``net.connect`` decorator. This connect function will launch a ``net.Peer`` server and register
-our ``multiply_values`` function with it.
+app.py
+++++++
+
+.. literalinclude:: ../examples/simple_connection/app.py
 
 
-.. code-block:: python
+peer1.py
+++++++++
 
-    import net
+.. literalinclude:: ../examples/simple_connection/peer1.py
 
-    # application code
-    @net.connect()
-    def multiply_values(val1, val2):
-        return val1 * val2
+peer2.py
+++++++++
 
-
-
-.. code-block:: python
-
-    >>> import net
-    >>>
-    >>> # get all net peers reachable on local host and the local area network.
-    >>> for peer_id in net.get_peers():
-    >>>     #
-    >>>     print(multiply_values(5, 10, peer=peer_id))
-    50
-    ...
-
-
-.. code-block:: python
-
-    >>> import net
-    >>>
-    >>> # get all net peers reachable on local host and the local area network.
-    >>> for peer_id in net.get_peers():
-    >>>     #
-    >>>     print(multiply_values(5, 10, peer=peer_id))
-    50
-    ...
+.. literalinclude:: ../examples/simple_connection/peer2.py

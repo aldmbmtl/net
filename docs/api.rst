@@ -115,3 +115,11 @@ will determine which peer you are being returned.
     .. autoattribute:: net.peer._Peer.CONNECTIONS
     .. autoattribute:: net.peer._Peer.SUBSCRIPTIONS
     .. autoattribute:: net.peer._Peer.FLAGS
+
+Full Package
+++++++++++++
+
+.. toctree::
+   :maxdepth: 7
+
+   modules

@@ -6,7 +6,7 @@ ROOT = os.path.abspath(__file__ + '/../../')
 reg_ex = re.compile(r'at ([0-9].+)/10 ')
 
 process = Popen(
-    'pylint net',
+    'pylint --ignore=[__init__.py] net',
     shell=True,
     stdout=PIPE,
     stderr=PIPE,

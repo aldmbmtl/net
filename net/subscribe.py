@@ -14,7 +14,7 @@ __all__ = [
 import net
 
 
-def subscribe(event, peers=None):
+def subscribe(event, groups=None, hubs_only=False, peers=None, on_host=None):
     """
     Subscribe to an event on another peer or set of peers. When the peer
     triggers an event using ``net.event``, the peer will take the arguments
@@ -53,7 +53,12 @@ def subscribe(event, peers=None):
     """
     # handle peers arg
     if not peers:
-        peers = net.peers()
+        peers = net.peers(
+            hubs_only=hubs_only,
+            groups=groups,
+            on_host=on_host
+        )['peers'].keys()
+
     else:
         if not isinstance(peers, (list, tuple)):
             peers = [peers]

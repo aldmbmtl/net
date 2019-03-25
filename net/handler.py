@@ -51,8 +51,18 @@ class PeerHandler(socketserver.BaseRequestHandler):
                 self.request.sendall(null)
                 return
 
-            # pull in the connection registered on this peer.
-            connection = self.server.CONNECTIONS.get(data['connection'].encode('ascii'))
+            # pull in the connection registered on this peer. The name passed
+            # could be a string.
+            connection = None
+
+            # TODO: This needs to be addressed in the future. Would prefer to
+            #  get away from the byte encoding. The following for loop logic can
+            #  be removed once this is figured out.
+            names = [data['connection'], data['connection'].encode('ascii')]
+            for name in names:
+                connection = self.server.CONNECTIONS.get(name)
+                if connection:
+                    break
 
             # throw invalid if the connection doesn't exist on this peer.
             if not connection:

@@ -6,20 +6,20 @@ Default Flags
 Prebuilt flags for net. Do not modify.
 """
 
+# std imports
+import base64
+
+# package imports
+import net
+
 __all__ = [
     'null_response',
     'invalid_connection'
 ]
 
-# std imports
-import base64
-
-# package imports
-from net import flag
-
 
 # Flags
-@flag('NULL')
+@net.flag('NULL')
 def null_response(connection, foreign_peer_id):
     """
     Execute this if the peer has returned the NULL_RESPONSE flag.
@@ -32,7 +32,7 @@ def null_response(connection, foreign_peer_id):
 
 
 # Flags
-@flag('INVALID_CONNECTION')
+@net.flag('INVALID_CONNECTION')
 def invalid_connection(connection, foreign_peer_id):
     """
     Execute this if the peer has returned the NULL_RESPONSE flag.
@@ -51,10 +51,12 @@ def invalid_connection(connection, foreign_peer_id):
     raise Exception(
         "Peer does not have the connection you are requesting.\n\t"
         "Peer: {0}@{1}\n\t"
+        "Registered Connections: \n\t\t{4}\n\t"
         "Connection Requested: {2} -> {3}".format(
             foreign_peer_id['host'],
             foreign_peer_id['port'],
             connection,
-            location
+            location,
+            '\n\t\t'.join([str(connection) for connection in net.Peer().CONNECTIONS.keys()])
         )
     )

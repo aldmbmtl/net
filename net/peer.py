@@ -6,10 +6,12 @@ __all__ = [
 
 # std imports
 import re
-import os
+import sys
+import copy
 import json
 import socket
 import base64
+import getpass
 import traceback
 import threading
 
@@ -27,13 +29,16 @@ import net
 # globals
 SINGLETON = None
 
+# utilities
+ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<group>.+)")
+
+# threading
+LOCK = threading.Lock()
+
 
 # noinspection PyMissingConstructor
 class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
     # adding to inheritance object for 2.7 support
-
-    # utilities
-    ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<group>.+)")
 
     # store
     CONNECTIONS = {}
@@ -63,8 +68,8 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
 
         return byte_string
 
-    @classmethod
-    def encode(cls, obj):
+    @staticmethod
+    def encode(obj):
         """
         Encode an object for delivery.
 
@@ -73,7 +78,7 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         """
         if not isinstance(obj, dict):
             try:
-                if obj in cls.FLAGS:
+                if obj in Peer().FLAGS:
                     return obj
             except TypeError:
                 pass
@@ -129,15 +134,15 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         )
 
     # noinspection PyShadowingBuiltins
-    @classmethod
-    def decode_id(cls, id):
+    @staticmethod
+    def decode_id(id):
         """
         Decode a peer id
 
         :param id: base64
         :return: dict {'group': str, 'host': str, 'port': int }
         """
-        expr = cls.ID_REGEX.match(base64.b64decode(id).decode('ascii')).groupdict()
+        expr = ID_REGEX.match(base64.b64decode(id).decode('ascii')).groupdict()
 
         return {
             'group': expr['group'],
@@ -145,8 +150,8 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
             'port': int(expr['port'])
         }
 
-    @classmethod
-    def build_connection_name(cls, connection):
+    @staticmethod
+    def build_connection_name(connection):
         """
         Build a connections full name based on the module/name of the function.
         This is then encoded in base64 for easier delivery between peers.
@@ -160,111 +165,6 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
                 connection.__name__
             ).encode('ascii')
         )
-
-    @classmethod
-    def register_connection(cls, connection, tag=None):
-        """
-        Registers a connection with the global handler.
-        Do not use this directly. Instead use the net.connect decorator.
-
-        :func:`net.connect`
-
-        :param tag: str
-        :param connection: function
-        :return: str
-        """
-        if not tag:
-            tag = cls.build_connection_name(connection)
-        else:
-            tag = cls.encode(tag)
-
-        # add the connection to the connection registry.
-        if tag in cls.CONNECTIONS:
-            net.LOGGER.warning(
-                "Redefining a connection handler. Be aware, this could cause "
-                "unexpected results."
-            )
-        cls.CONNECTIONS[tag] = connection
-
-        return tag
-
-    @classmethod
-    def register_subscriber(cls, event, peer, connection):
-        """
-        Registers the peer and connection to the peers subscription system. This
-        is for internal use only, use the ``net.subscribe`` decorator instead.
-
-        :param event: event id
-        :param peer: peer id
-        :param connection: connection id
-        :return: None
-        """
-        subscription = cls.SUBSCRIPTIONS.setdefault(event, {})
-        peer_connection = subscription.setdefault(peer, [])
-        peer_connection.append(connection)
-
-    @classmethod
-    def register_flag(cls, flag, handler):
-        """
-        Registers a flag with the peer server. Flags are simple responses that
-        can trigger error handling or logging. Do not use this directly. Instead
-        use the net.flag decorator.
-
-        @net.flag("SOME_ERROR")
-        def your_next_function(peer, connection):
-            raise SomeError(
-                "This failed because {0} failed on the other peer.".format(
-                    connection
-                )
-            )
-
-        :param flag: payload
-        :param handler: function
-        :return: base64
-        """
-
-        flag = base64.b64encode(flag.encode('ascii'))
-
-        if flag in cls.FLAGS:
-            net.LOGGER.warning(
-                "Redefining a flag handler. Be aware, this could cause "
-                "unexpected results."
-            )
-
-        cls.FLAGS[flag] = handler
-
-        return flag
-
-    @classmethod
-    def process_flags(cls, response):
-        """
-        Check a response and test if it should be processed as a flag.
-
-        :param response: Anything
-        :return: response from the registered process
-        """
-        # handle flags
-        try:
-            if response in cls.FLAGS:
-                return cls.FLAGS[response]
-        except TypeError:
-            pass
-
-    @classmethod
-    def get_flag(cls, flag):
-        """
-        Get a flags id.
-
-        :param flag: str
-        :return: str
-        """
-        encoded = base64.b64encode(flag.encode('ascii'))
-
-        # validate the flag requested
-        if encoded not in cls.FLAGS:
-            raise Exception("Invalid Flag requested.")
-
-        return encoded
 
     def __init__(self, launch=True, test=False, group=None):
 
@@ -349,7 +249,109 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # decode and hand back
         friendly = self.decode_id(peer_id)
         friendly['hub'] = self._is_hub
+        friendly['executable'] = sys.executable
+        friendly['user'] = getpass.getuser()
         return friendly
+
+    def register_connection(self, connection, tag=None):
+        """
+        Registers a connection with the global handler.
+        Do not use this directly. Instead use the net.connect decorator.
+
+        :func:`net.connect`
+
+        :param tag: str
+        :param connection: function
+        :return: str
+        """
+        if not tag:
+            tag = self.build_connection_name(connection)
+        else:
+            tag = self.encode(tag)
+
+        # add the connection to the connection registry.
+        if tag in self.CONNECTIONS:
+            net.LOGGER.warning(
+                "Redefining a connection handler. Be aware, this could cause "
+                "unexpected results."
+            )
+        self.CONNECTIONS[tag] = connection
+
+        return tag
+
+    def register_subscriber(self, event, peer, connection):
+        """
+        Registers the peer and connection to the peers subscription system. This
+        is for internal use only, use the ``net.subscribe`` decorator instead.
+
+        :param event: event id
+        :param peer: peer id
+        :param connection: connection id
+        :return: None
+        """
+        subscription = self.SUBSCRIPTIONS.setdefault(event, {})
+        peer_connection = subscription.setdefault(peer, [])
+        peer_connection.append(connection)
+
+    def register_flag(self, flag, handler):
+        """
+        Registers a flag with the peer server. Flags are simple responses that
+        can trigger error handling or logging. Do not use this directly. Instead
+        use the net.flag decorator.
+
+        @net.flag("SOME_ERROR")
+        def your_next_function(peer, connection):
+            raise SomeError(
+                "This failed because {0} failed on the other peer.".format(
+                    connection
+                )
+            )
+
+        :param flag: payload
+        :param handler: function
+        :return: base64
+        """
+
+        flag = base64.b64encode(flag.encode('ascii'))
+
+        if flag in self.FLAGS:
+            net.LOGGER.warning(
+                "Redefining a flag handler. Be aware, this could cause "
+                "unexpected results."
+            )
+
+        self.FLAGS[flag] = handler
+
+        return flag
+
+    def process_flags(self, response):
+        """
+        Check a response and test if it should be processed as a flag.
+
+        :param response: Anything
+        :return: response from the registered process
+        """
+        # handle flags
+        try:
+            if response in self.FLAGS:
+                return self.FLAGS[response]
+        except TypeError:
+            pass
+
+    def get_flag(self, flag):
+        """
+        Get a flags id.
+
+        :param flag: str
+        :return: str
+        """
+        encoded = base64.b64encode(flag.encode('ascii'))
+
+        # validate the flag requested
+        if encoded not in self.FLAGS:
+            raise Exception("Invalid Flag requested.")
+
+        return encoded
 
     def scan_for_port(self):
         """
@@ -464,6 +466,40 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         # decode and return final response
         return self.decode(raw)
 
+    def protected_request(self, peer, connection, args, kwargs, stale):
+        """
+        This allows for protected requests. Intended for threaded event calls.
+
+        .. warning::
+
+            INTERNAL USE ONLY
+            Do not use this directly, it will only cause you pain.
+
+        :param peer: base64 encoded peer id
+        :param connection: the target connection id to run
+        :param args: positional arguments to pass to the target connection (must be json compatible)
+        :param kwargs: keyword arguments to pass to the target connection (must be json compatible)
+        :param stale: share resource for detecting old peers
+        :return: response from peer
+        """
+        try:
+            self.request(peer, connection, args, kwargs)
+        except Exception as e:
+            if isinstance(e, ConnectionRefusedError):
+
+                # thread handling
+                LOCK.acquire()
+                stale.append(peer)
+                LOCK.release()
+
+            else:
+                net.LOGGER.warning(
+                    "An error has happened a remote peer. "
+                    "This was a protected request and will "
+                    "ignore the error response.\n\t"
+                    "Peer: {0}".format(self.decode_id(peer))
+                )
+
     def trigger_event(self, event, *args, **kwargs):
         """
         Registers the peer and connection to the peers subscription system. This
@@ -477,16 +513,81 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
         event = self.SUBSCRIPTIONS.get(event)
 
         if not event:
-            raise Exception(
-                "Invalid Event. Registered Events:\n" + '\n'.join(
+            net.LOGGER.info(
+                "Invalid Event {0}.\n"
+                "This event has no subscribers so it will be skipped."
+                "Active Events:\n" + '\n'.join(
                     sorted(self.SUBSCRIPTIONS.keys())
                 )
             )
+            return
 
         # loop over the peers
+        stale = []
+
+        # thread spawning variables
+        threads = []
+
+        # loop over and multi thread the requests
         for peer, connections in event.items():
             for connection in connections:
-                self.request(peer, connection, args, kwargs)
+                # try to execute the subscription trigger on the subscribed peer
+                # For the purpose of protecting the event triggering peer from
+                # remote errors, all connection errors and remote runtime errors
+                # will be caught and logged. But nothing will halt the running
+                # application. i.e. this peer.
+                #
+                # Stale peer subscriptions will be added to the stale list and
+                # pruned. Since the list subscriptions are created per client
+                # request, this peer will not know until a request is made that
+                # the subscribed peer went offline.
+                if net.THREAD_LIMIT == 0:
+                    self.protected_request(peer, connection, args, kwargs, stale)
+                    continue
+
+                # if multi-threading is configured, distribute the workload to
+                # the threads.
+                thread = threading.Thread(
+                    target=self.protected_request,
+                    args=(peer, connection, args, kwargs, stale)
+                )
+                thread.setName(
+                    "Network_Scanner_{0}_{1}".format(peer, connection)
+                )
+                thread.daemon = True
+                threads.append(thread)
+                thread.start()
+
+                # if we hit the configured thread limit, wait until we free up
+                # some threads
+                if len(threads) == net.THREAD_LIMIT:
+                    for thread in threads:
+                        thread.join()
+
+                    # reset the threads list and continue requesting
+                    threads = []
+
+        # safety catch incase there are still some working threads
+        for thread in threads:
+            thread.join()
+
+        # create a working copy before we prune
+        updated_subscriptions = copy.deepcopy(self.SUBSCRIPTIONS)
+
+        # Clean out the stale peers that are no longer valid.
+        for event, event_data in self.SUBSCRIPTIONS.items():
+
+            # clean out the offline or unreachable peers
+            for stale_address in stale:
+                if stale_address in event_data:
+                    del updated_subscriptions[event][stale_address]
+
+            # delete the event if it is empty
+            if not event_data.keys():
+                del updated_subscriptions[event]
+
+        # update the subscriptions registry
+        self.SUBSCRIPTIONS = updated_subscriptions
 
 
 # noinspection PyPep8Naming

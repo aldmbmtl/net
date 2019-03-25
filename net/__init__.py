@@ -18,12 +18,13 @@ __all__ = [
     'IS_HUB',
     'subscribe',
     'HOST_IP',
-    'event'
+    'event',
+    'connections'
 ]
 
 __author__ = 'Alex Hatfield'
 __email__ = 'alex@hatfieldfx.com'
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 
 from .environment import *
 from .peer import *

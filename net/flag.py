@@ -14,7 +14,7 @@ __all__ = [
 from functools import wraps
 
 # package imports
-from .peer import _Peer
+import net
 
 
 def flag(name):
@@ -30,7 +30,7 @@ def flag(name):
             return func(*args, **kwargs)
 
         # register the function with the peer handler
-        _Peer.register_flag(name, handler)
+        net.Peer().register_flag(name, handler)
 
         return handler
     return registry

@@ -92,6 +92,18 @@ def event(name):
 
     As you can see, these functions act as a hook into the delivery system when
     the event is triggered.
+
+    There are protections put in place to try to prevent the peer that triggered
+    the event to be blocked by a bad handle on the subscribed peer. For the
+    purpose of protecting the event triggering peer from remote errors, all
+    connection errors and remote runtime errors will be caught and logged. But
+    nothing will halt the running application.
+
+    i.e. event -> remote peer errors -> event peer will log and ignore
+
+    Stale peer subscriptions will be added to the stale list and pruned. Since
+    the subscriptions are created per client request, the event peer will not
+    know until a request is made that the subscribed peer went offline.
     """
     def wrapper(func):
         @wraps(func)
