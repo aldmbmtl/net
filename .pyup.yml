@@ -2,5 +2,7 @@ branch: dev
 
 requirements:
     - requirements.txt
+    - docs/requirements_dev.txt:
+        pin: False
     - requirements_dev.txt:
         pin: False

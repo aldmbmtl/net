@@ -1,8 +1,6 @@
 pip
 wheel
 tox
-m2r
-Sphinx
 twine
 pytest
 pytest-runner
