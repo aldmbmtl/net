@@ -16,7 +16,7 @@ import subprocess
 import net
 
 # local imports
-from net.imports import ConnectionRefusedError, PermissionError
+from .imports import ConnectionRefusedError, PermissionError
 
 __all__ = [
     'peers'
@@ -193,7 +193,7 @@ def find_peers_in_block(ips, groups=None, hubs_only=False):
                 # release the shared resource
                 LOCK.release()
 
-            except (PermissionError, ConnectionRefusedError, OSError):
+            except (PermissionError, ConnectionRefusedError, OSError) as err:
                 net.LOGGER.disabled = False
 
 
@@ -258,3 +258,19 @@ def get_peers(groups, on_host, hubs_only):
         thread.join()
 
     return PEERS
+
+
+def set_config(
+        THREAD_LIMIT=None,
+        PORT=None,
+        PORT_RANGE=None,
+        GROUP=None,
+        IS_HUB=None,
+):
+    """
+    Set a configuration value. These are configuration values that can be set at
+    runtime to modify your net configuration.
+
+
+    :return:
+    """

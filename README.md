@@ -6,7 +6,7 @@ app-net
 ![Python 3](https://pyup.io/repos/github/aldmbmtl/net/python-3-shield.svg)
 ![Travis](https://img.shields.io/travis/aldmbmtl/net.svg)
 ![Coverage](https://github.com/aldmbmtl/net/raw/master/coverage.svg?sanitize=true)
-![PyLint](https://mperlet.github.io/pybadge/badges/8.45.svg)
+![PyLint](https://mperlet.github.io/pybadge/badges/8.33.svg)
 ![PyUp](https://pyup.io/repos/github/aldmbmtl/net/shield.svg)
 ![Documentation Status](https://readthedocs.org/projects/net/badge/?version=latest)
 
@@ -19,3 +19,9 @@ result as though it was run locally.
 Link to the [Documentation](https://app-net.readthedocs.io/en/latest/?).
 
 Helpful [Examples](https://app-net.readthedocs.io/en/latest/examples/examples.html).
+
+Road Map
+--------
+* TLS/SSL Support
+* Runtime Peer configuration
+* Definable net.info return values

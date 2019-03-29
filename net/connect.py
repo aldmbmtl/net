@@ -13,14 +13,14 @@ __all__ = [
 # std imports
 from functools import wraps
 
-# package imports
-from net import LOGGER
-
 # 3rd party
 from termcolor import colored
 
 # package imports
-from .peer import Peer, _Peer
+from net import LOGGER
+
+# package imports
+from .peer import Peer
 
 
 # noinspection PyShadowingNames

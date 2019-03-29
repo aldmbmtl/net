@@ -14,7 +14,7 @@ __all__ = [
     'DEV',
     'GROUP',
     'IS_HUB',
-    'HOST_IP'
+    'HOST_IP',
 ]
 
 # std imports
@@ -33,7 +33,6 @@ PORT_RANGE = int(os.environ.setdefault("NET_PORT_RANGE", "5"))
 # peer configuration
 GROUP = str(os.environ.get("NET_GROUP"))
 IS_HUB = os.environ.get("NET_IS_HUB") is not None
-
 
 # handle development environment
 DEV = os.environ.get("NET_DEV")

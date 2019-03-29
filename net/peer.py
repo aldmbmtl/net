@@ -15,15 +15,18 @@ import getpass
 import traceback
 import threading
 
+# compatibility
+import six
+
 # third party
 import termcolor
 
 # package imports
-from .handler import PeerHandler
-from .imports import socketserver, ConnectionRefusedError
+import net
 
 # package imports
-import net
+from .handler import PeerHandler
+from .imports import socketserver, ConnectionRefusedError
 
 
 # globals
@@ -36,7 +39,19 @@ ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<group>.+)")
 LOCK = threading.Lock()
 
 
+class PeerSingletonHandler(type):
+    """
+    Handles Peer construction.
+
+    DO NOT USE DIRECTLY!
+    """
+    instance = None
+
+
+
+
 # noinspection PyMissingConstructor
+@six.add_metaclass(PeerSingletonHandler)
 class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
     # adding to inheritance object for 2.7 support
 
@@ -355,8 +370,9 @@ class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
 
     def scan_for_port(self):
         """
-        Scan for a free port to bind to. You can override the default port range and search range by setting the
-        environment variables NET_PORT NET_PORT_RANGE.
+        Scan for a free port to bind to. You can override the default port range
+        and search range by setting the environment variables NET_PORT
+        NET_PORT_RANGE.
 
         Port range:
             default 3010-3050

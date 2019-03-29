@@ -11,8 +11,21 @@ root = os.path.dirname(__file__)
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ['Click>=6.0', ]
-setup_requirements = ['pytest-runner', ]
+requirements = [
+    'Click>=6.0',
+    'termcolor',
+    'six'
+]
+setup_requirements = [
+    'pytest-runner',
+    'wheel',
+    'twine',
+    'pytest',
+    'pytest-runner',
+    'pylint',
+    'tox',
+    'pip'
+]
 test_requirements = ['pytest', ]
 
 setup(

@@ -5,4 +5,3 @@ twine
 pytest
 pytest-runner
 pylint
-coverage-badge
