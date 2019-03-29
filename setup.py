@@ -12,7 +12,6 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'Click>=6.0',
     'termcolor',
     'six'
 ]
@@ -24,7 +23,6 @@ setup_requirements = [
     'pytest-runner',
     'pylint',
     'tox',
-    'pip'
 ]
 test_requirements = ['pytest', ]
 
@@ -62,6 +60,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/aldmbmtl/net',
-    version='0.4.0',
+    version='0.4.1',
     zip_safe=False,
 )

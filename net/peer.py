@@ -15,9 +15,6 @@ import getpass
 import traceback
 import threading
 
-# compatibility
-import six
-
 # third party
 import termcolor
 
@@ -39,19 +36,7 @@ ID_REGEX = re.compile(r"(?P<host>.+):(?P<port>\d+) -> (?P<group>.+)")
 LOCK = threading.Lock()
 
 
-class PeerSingletonHandler(type):
-    """
-    Handles Peer construction.
-
-    DO NOT USE DIRECTLY!
-    """
-    instance = None
-
-
-
-
 # noinspection PyMissingConstructor
-@six.add_metaclass(PeerSingletonHandler)
 class _Peer(socketserver.ThreadingMixIn, socketserver.TCPServer, object):
     # adding to inheritance object for 2.7 support
 
