@@ -5,6 +5,10 @@ Default Connected Handlers
 
 Prebuilt connected handlers for net. Do not modify.
 """
+# python imports
+import sys
+import getpass
+
 # package imports
 import net
 
@@ -29,7 +33,28 @@ def info(*args, **kwargs):
 
     :return: peer.friendly_id
     """
-    return net.Peer().friendly_id
+    information = net.Peer()
+    return {
+        # friendly tag
+        'tag': str(information),
+
+        # host
+        'host': information.host,
+        'port': information.port,
+
+        # user
+        'user': getpass.getuser(),
+        'executable': sys.executable,
+
+        # app
+        'group': information.group,
+        'hub': information.hub,
+
+        # interfaces
+        'connections': sorted(list(information.registered_connections.keys())),
+        'subscriptions': sorted(list(information.registered_subscriptions.keys())),
+        'flags': sorted(list(information.registered_flags.keys())),
+    }
 
 
 # basic connection descriptor
@@ -44,12 +69,14 @@ def connections(*args, **kwargs):
 
     :return: peer.CONNECTIONS
     """
-    connections = net.Peer().CONNECTIONS
+    registered_connections = net.Peer().registered_connections
 
     return 'Connections on {1}:\n\t{0}'.format(
         '\n\n\t'.join(
             [
-                '{0}\n\t\t{1}'.format(key, connections[key]) for key in connections.keys()
+                '{0}\n\t\t{1}'.format(
+                    key,
+                    registered_connections[key]) for key in registered_connections.keys()
             ]
         ),
         net.Peer().friendly_id
@@ -87,20 +114,14 @@ def null(*args, **kwargs):
 
 
 @net.connect()
-def subscription_handler(event, peer, connection):
+def subscription_handler(event, host, port, connection, *args, **kwargs):
     """
     Will register the incoming peer and connection with the local peers
     subscription of the event passed. This is for internal use only.
 
     :param event: event id
-    :param peer: foreign peer id
+    :param host: foreign peer host
+    :param port: foreign peer port
     :param connection: connection id
     """
-    # handles strings with b'' wrapping them.
-    try:
-        peer = str(peer.split("'")[1]).encode('ascii')
-        connection = str(connection.split("'")[1]).encode('ascii')
-    except IndexError:
-        pass
-
-    net.Peer().register_subscriber(event, peer, connection)
+    net.Peer().register_subscriber(event, host, port, connection)

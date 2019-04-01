@@ -13,14 +13,11 @@ __all__ = [
 # std imports
 from functools import wraps
 
-# 3rd party
-from termcolor import colored
-
 # package imports
 from net import LOGGER
 
 # package imports
-from .peer import Peer
+from net import Peer
 
 
 # noinspection PyShadowingNames
@@ -95,40 +92,27 @@ def connect(tag=None):
 
         @wraps(func)
         def interface(*args, **kwargs):
+
             # execute the function as is if this is being run by the local peer
             if not kwargs.get('peer'):
-                LOGGER.debug("{0} execution on {1}".format(
-                    colored("Local", 'green', attrs=['bold']),
-                    colored(str(peer.friendly_id), 'magenta'))
-                )
+                LOGGER.debug("LOCAL request {0}".format(peer))
 
                 # run the target connection locally
                 response = func(*args, **kwargs)
 
                 # This is to simulate the Peer environment as far as processing
                 # the flags
-                processor = peer.process_flags(response)
+                processor = peer.process_flags(response, connection_name, peer)
                 if processor:
-                    terminate = processor(connection_name, peer.friendly_id)
-                    if terminate:
-                        return terminate
+                    return processor
 
-                # this response should be the same as if it was remote. But just
-                # in the context of the local host. This means I must encode the
-                # response and then decode it which is what the remote host will
-                # do.
-                response = peer.encode(response)
-                return peer.decode(response)
+                return response
 
-            encoded_address = kwargs.get('peer')
-            remote_peer_address = peer.decode_id(encoded_address)
-            LOGGER.debug("{0} execution on {1}".format(
-                colored("Remote", 'blue', attrs=['bold']),
-                colored(remote_peer_address, 'magenta'))
-            )
+            target = kwargs.get('peer')
+            LOGGER.debug("REMOTE request {0}".format(target))
 
             # clean out the peer argument from the kwargs and make request
-            response = peer.request(encoded_address, connection_name, args, kwargs)
+            response = peer.execute(target, connection_name, args, kwargs)
 
             # handle error catching
             if isinstance(response, dict):

@@ -11,13 +11,14 @@ __all__ = [
 ]
 
 # std imports
+import json
 import traceback
 
 # package imports
 import net
 
 # python 2/3 imports
-from .imports import socketserver
+from net.imports import socketserver
 
 
 class PeerHandler(socketserver.BaseRequestHandler):
@@ -33,9 +34,11 @@ class PeerHandler(socketserver.BaseRequestHandler):
         """
         raw = self.request.recv(1024)
 
+        local_peer = net.Peer()
+
         # response codes
-        null = self.server.get_flag('NULL')
-        invalid_connection = self.server.get_flag('INVALID_CONNECTION')
+        null = local_peer.get_flag('NULL').encode('ascii')
+        invalid_connection = local_peer.get_flag('INVALID_CONNECTION').encode('ascii')
 
         # if there is no data, bail and don't respond
         if not raw:
@@ -44,25 +47,20 @@ class PeerHandler(socketserver.BaseRequestHandler):
 
         # convert from json
         try:
-            data = self.server.decode(raw)
+            data = raw.decode('ascii')
+
+            try:
+                data = json.loads(data)
+            except Exception as err:
+                net.LOGGER.info("Could not decode server request data: {0}".format(err))
 
             # skip if there is no data in the request
             if not data:
                 self.request.sendall(null)
                 return
 
-            # pull in the connection registered on this peer. The name passed
-            # could be a string.
-            connection = None
-
-            # TODO: This needs to be addressed in the future. Would prefer to
-            #  get away from the byte encoding. The following for loop logic can
-            #  be removed once this is figured out.
-            names = [data['connection'], data['connection'].encode('ascii')]
-            for name in names:
-                connection = self.server.CONNECTIONS.get(name)
-                if connection:
-                    break
+            # Get the registered connection
+            connection = local_peer.registered_connections.get(data['connection'])
 
             # throw invalid if the connection doesn't exist on this peer.
             if not connection:
@@ -70,15 +68,17 @@ class PeerHandler(socketserver.BaseRequestHandler):
                 return
 
             # execute the connection handler and send back
-            response = self.server.encode(connection(*data['args'], **data['kwargs']))
-            self.request.sendall(response)
+            response = connection(*data['args'], **data['kwargs'])
+
+            self.request.sendall(json.dumps(response).encode('ascii'))
 
         except Exception as err:
             net.LOGGER.error(err)
             net.LOGGER.error(traceback.format_exc())
+
             packet = {
                 'payload': 'error',
                 'traceback': traceback.format_exc()
             }
-            payload = self.server.encode(packet)
-            self.request.sendall(payload)
+
+            self.request.sendall(json.dumps(packet).encode('ascii'))

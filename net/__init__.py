@@ -28,9 +28,6 @@ __version__ = '0.4.1'
 
 from .environment import *
 from .peer import *
-from .flag import *
-from .connect import *
-from .subscribe import *
-from .event import *
 from .api import *
+from .connections import *
 from .defaults import *

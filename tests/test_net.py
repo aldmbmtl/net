@@ -5,6 +5,7 @@ from __future__ import print_function
 """Tests for `net` package."""
 
 # std imports
+import functools
 import traceback
 
 # testing
@@ -22,7 +23,17 @@ def peers():
     net.LOGGER.debug("Test Header")
 
     master = net.Peer()
-    slave = master.__class__(test=True)
+    slave = net.Peer(test=True)
+
+    @net.connect()
+    def force_error(*args, **kwargs):
+        raise Exception
+
+    # need to register the default functions for testing
+    slave.register_connection(slave.mask_as_remote(net.pass_through))
+    slave.register_connection(slave.mask_as_remote(net.null))
+    slave.register_connection(slave.mask_as_remote(force_error))
+    slave.register_connection(slave.mask_as_remote(net.subscription_handler))
 
     yield master, slave
 
@@ -37,12 +48,8 @@ def test_peer_construct(peers):
 
     assert master.port != slave.port
     assert not master.hub
-    assert slave.ping(master.port, master.host) is True
-    assert master.ping(slave.port, slave.host) is True
-
-    with pytest.raises(RuntimeError):
-        # this should fail so the user doesnt try to overwrite the running peer.
-        net.peer._Peer()
+    assert slave.server.ping(master.port, master.host) is True
+    assert master.server.ping(slave.port, slave.host) is True
 
 
 def test_connect_decorator(peers):
@@ -54,11 +61,11 @@ def test_connect_decorator(peers):
     master, slave = peers
 
     test_cases = [
-        # dicts types
+        # dict types
         {"testing": "value"}, {"1": 1}, {"1": {"2": 3}},
 
-        # array types
-        [1, "1", "1"], (1, 2, 3),
+        # array types. Tuples aren't supported at the moment
+        [1, "1", 1.0],
 
         # strings types
         "This is a string", "",
@@ -75,28 +82,38 @@ def test_connect_decorator(peers):
 
     # loop over each test case and make sure a remote response equals to a local response.
     for case in test_cases:
-        assert net.pass_through(case) == net.pass_through(case, peer=slave.id)
-
-    # test that pass_through will allow both args and kwargs
-    assert net.pass_through(
-        "this",
-        "is",
-        a_test="case"
-    ) == net.pass_through(
-        "this",
-        "is",
-        a_test="case",
-        peer=slave.id
-    )
+        master_response = master.pass_through(case)
+        slave_response = slave.pass_through(case)
+        assert master_response == slave_response
 
     # test the default handlers
-    assert net.pass_through(master.get_flag('NULL')) == 'NULL'
-    assert net.null() == "NULL"
-    assert net.null(peer=slave.id) == "NULL"
+    assert net.null() == 'NULL'
+    assert master.pass_through(master.get_flag('NULL')) == 'NULL'
+    assert master.null() == "NULL"
+    assert slave.null() == "NULL"
 
-    # test that connection requests work
-    net.connections()
-    net.connections(peer=slave.id)
+    try:
+        slave.force_error()
+    except Exception:
+        if "RemoteError" not in traceback.format_exc():
+            pytest.fail("Remote Exception failure")
+
+
+def test_subscriptions(peers):
+    master, slave = peers
+
+    test_message = "my message"
+
+    @net.subscribe('my_event', peers=slave)
+    def handle_subscribe(message):
+        assert test_message == message
+
+    @net.event('my_event')
+    def my_event(*args, **kwargs):
+        assert args[0] == test_message
+        return args, kwargs
+
+    my_event(test_message)
 
 
 def test_peer_handle(peers):
@@ -106,61 +123,10 @@ def test_peer_handle(peers):
     master, slave = peers
 
     try:
-        master.request(slave.id, 'missing_connection', (), {})
+        master.execute(slave, 'missing_connection', (), {})
         pytest.fail('Invalid connection is not being handled correctly.')
-    except Exception as err:
+    except Exception:
         assert "Peer does not have the connection you are requesting" in traceback.format_exc()
-
-
-def test_subscription(peers):
-    """
-    Tests the subscription system
-    """
-    net.LOGGER.debug("Test Header")
-
-    master, slave = peers
-
-    assert slave.SUBSCRIPTIONS == {}
-
-    @net.subscribe('test_event', peers=slave.id)
-    def subscribe_test(test_case):
-        return test_case
-
-    assert slave.SUBSCRIPTIONS != {}
-
-    @net.event('test_event')
-    def event_test(*args, **kwargs):
-        return args, kwargs
-
-    event_test('testing')
-
-
-def test_flag_decorator(peers):
-    """
-    Test the connect decorator
-    """
-    master, slave = peers
-
-    # define the testing connection handler
-    @net.connect()
-    def test_response_handler():
-        flag = net.Peer().get_flag("TEST")
-        return flag
-
-    # should throw an error since the flag is not defined yet
-    with pytest.raises(Exception):
-
-        net.LOGGER.disabled = True
-        test_response_handler(peer=slave.id)
-        net.LOGGER.disabled = False
-
-    # define the missing flag
-    @net.flag("TEST")
-    def test_flag(connection, peer):
-        return "TEST"
-
-    # flag is defined and should not fail
-    assert test_response_handler(peer=slave.id) == "TEST"
 
 
 def test_api():
@@ -173,6 +139,7 @@ def test_api():
     net.peers()
     net.peers(groups=['group1'], refresh=True)
     net.peers(on_host=True, refresh=True)
+    net.peer_group()
 
     # test non-threaded
     net.THREAD_LIMIT = 0
@@ -180,6 +147,4 @@ def test_api():
     net.peers()
     net.peers(groups=['group1'], refresh=True)
     net.peers(on_host=True, refresh=True)
-
-    # test non-threaded
-    net.THREAD_LIMIT = 5
+    net.peer_group()

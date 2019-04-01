@@ -51,14 +51,15 @@ def subscribe(event, groups=None, hubs_only=False, peers=None, on_host=None):
             return some_value
 
     """
+    this_peer = net.Peer()
+
     # handle peers arg
     if not peers:
         peers = net.peers(
             hubs_only=hubs_only,
             groups=groups,
             on_host=on_host
-        )['peers'].keys()
-
+        )['peers'].values()
     else:
         if not isinstance(peers, (list, tuple)):
             peers = [peers]
@@ -66,16 +67,11 @@ def subscribe(event, groups=None, hubs_only=False, peers=None, on_host=None):
     def wrapper(func):
 
         # build the connection id
-        connection = net.Peer().register_connection(func)
-        local_peer_id = net.Peer().id
+        connection = this_peer.register_connection(func)
 
         # loop over all the requested peers
         for peer in peers:
-            net.subscription_handler(
-                event,
-                str(local_peer_id),
-                str(connection),
-                peer=peer
-            )
+            peer.subscription_handler(event, this_peer.host, this_peer.port, connection)
+
         return func
     return wrapper

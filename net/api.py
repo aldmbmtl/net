@@ -16,10 +16,11 @@ import subprocess
 import net
 
 # local imports
-from .imports import ConnectionRefusedError, PermissionError
+from net.imports import ConnectionRefusedError, PermissionError
 
 __all__ = [
-    'peers'
+    'peers',
+    'peer_group'
 ]
 
 
@@ -30,6 +31,44 @@ IP_REGEX = re.compile(r'\d+\.\d+\.\d\.\d+')
 
 # cache
 PEERS = None
+
+
+def peer_group(name=None, hubs_only=False, on_host=False):
+    """
+    Get a list of peers that are have been detected by net. You can get all
+    peers in the same group as the requesting peer just by calling this function
+    with no filter name. You can also request to only get the hubs for a
+    specific group.
+
+    .. code-block:: python
+
+        # Will get all peers in the same group that net.Peer() is in.
+        peers = net.peer_group()
+
+        # Peers in group1
+        peers = net.peer_group("group1")
+
+        # Get the hubs only for the group net.Peer() is in.
+        hubs = net.peer_group(hubs_only=True)
+
+        # Get only the hubs in group1
+        hubs = net.peer_group("group1", hubs_only=True)
+
+    :param name: name of the group
+    :param hubs_only: bool
+    :param on_host: bool
+    :return: list of ``net.Peer``
+    """
+    group_peers = []
+    if not name:
+        name = net.Peer().group
+
+    found_peers = peers(groups=[name], hubs_only=hubs_only, on_host=on_host)
+
+    group_data = found_peers.get(name)
+    if group_data:
+        return group_data
+    return group_peers
 
 
 def peers(refresh=False, groups=None, on_host=False, hubs_only=False):
@@ -47,47 +86,28 @@ def peers(refresh=False, groups=None, on_host=False, hubs_only=False):
     making a shell call to ``arp -a`` which will walk your network and find all
     hosts.
 
-    Standard call to get the peers on your network.
-
     .. code-block:: python
 
-        all_peers = net.peers()
+        # Standard call to get the peers on your network.
+        peers = net.peers()
 
-    Only search for peers on local host and not on the network.
+        # Only search for peers on local host and not on the network.
+        peers = net.peers(on_host=True)
 
-    .. code-block:: python
+        # Refresh all peers in the cache
+        peers = net.peers(refresh=True)
 
-        all_peers = net.peers(on_host=True)
+        # Refresh the cache with peers in group1
+        peers = net.peers("group1", refresh=True)
 
-    Refresh all peers in the cache
+        # Refresh the cache with peers in group1 and 2
+        peers = net.peers(["group1", "group2"], refresh=True)
 
-    .. code-block:: python
+        # Refresh the cache with all of the hubs on the network regardless of group.
+        peers = net.peers(hubs_only=True, refresh=True)
 
-        all_peers = net.peers(refresh=True)
-
-    Refresh the cache with peers in group1
-
-    .. code-block:: python
-
-        all_peers = net.peers("group1", refresh=True)
-
-    Refresh the cache with peers in group1 and 2
-
-    .. code-block:: python
-
-        all_peers = net.peers(["group1", "group2"], refresh=True)
-
-    Refresh the cache with all of the hubs on the network regardless of group.
-
-    .. code-block:: python
-
-        all_peers = net.peers(hubs_only=True, refresh=True)
-
-    Refresh the cache with only hubs in group1 and 2
-
-    .. code-block:: python
-
-        all_peers = net.peers(["group1", "group2"], hubs_only=True, refresh=True)
+        # Refresh the cache with only hubs in group1 and 2
+        peers = net.peers(["group1", "group2"], hubs_only=True, refresh=True)
 
     :param refresh: Bool
     :param groups: str
@@ -97,19 +117,15 @@ def peers(refresh=False, groups=None, on_host=False, hubs_only=False):
 
       # Peers
       'peers': {
-          b'MTkyLjE2OC4yLjI0OjMwMTAgLT4gTm9uZQ==': {
-              'group': 'None',
-              'host': '192.168.2.24',
-              'port': 3010,
-              'hub': False,
-              'executable': path/to/executable,
-              'user': username
-          },
+          '<net.Peer h:str p:int g:str|none c:int s:int f:int>': ``net.Peer``,
       },
 
       # Groups
-      'None': [
-          b'MTkyLjE2OC4yLjI0OjMwMTAgLT4gTm9uZQ=='
+      None: [
+          '<net.Peer h:str p:int g:str|none c:int s:int f:int>'
+      ],
+      "SomeOtherGroup": [
+          '<net.Peer h:str p:int g:str|none c:int s:int f:int>'
       ]
     }
     """
@@ -142,6 +158,7 @@ def find_peers_in_block(ips, groups=None, hubs_only=False):
 
     # pull in the local peer
     peer = net.Peer()
+    server = peer.server
 
     if not groups:
         groups = [peer.group]
@@ -150,26 +167,23 @@ def find_peers_in_block(ips, groups=None, hubs_only=False):
     for address in ips:
 
         # loop over ports
-        for port in peer.ports():
+        for port in server.ports():
 
             # skip self
-            if port == peer.port and address == peer.host:
+            if port == server.port and address == server.host:
                 continue
-
-            # generate the peer
-            foreign_peer_id = peer.generate_id(port, address)
 
             try:
                 # ping the peer and if it responds with the proper info,
                 # register it. Shut off the logger for this so we dont spam
                 # the console.
                 net.LOGGER.disabled = True
-                info = net.info(peer=foreign_peer_id, time_out=0.1)
+                info = net.info(peer=(address, port), time_out=0.1)
                 net.LOGGER.disabled = False
 
                 # skip registering this if the info is already in the
                 # registry.
-                if info in PEERS['peers'].values():
+                if info['tag'] in PEERS['peers'].values():
                     continue
 
                 # filter out peers that aren't in the groups requested.
@@ -180,15 +194,26 @@ def find_peers_in_block(ips, groups=None, hubs_only=False):
                 if hubs_only and not info['hub']:
                     continue
 
+                # construct the peer representation
+                new_peer = net.Peer(
+                    host=info['host'],
+                    port=info['port'],
+                    group=info['group'],
+                    hub=info['hub'],
+                    subscriptions=info['subscriptions'],
+                    connections=info['connections'],
+                    flags=info['flags'],
+                )
+
                 # acquire the lock and register
                 LOCK.acquire()
 
                 # register with the general information per peer
-                PEERS['peers'][foreign_peer_id] = info
+                PEERS['peers'][info['tag']] = new_peer
 
                 # register with the group registry
                 group_registry = PEERS.setdefault(info['group'], [])
-                group_registry.append(foreign_peer_id)
+                group_registry.append(new_peer)
 
                 # release the shared resource
                 LOCK.release()
@@ -213,6 +238,7 @@ def get_peers(groups, on_host, hubs_only):
 
     # get this peer for pinging
     peer = net.Peer()
+    server = peer.server
 
     # create subnet
     network = [net.HOST_IP]
@@ -221,7 +247,7 @@ def get_peers(groups, on_host, hubs_only):
 
     # logging help
     total_hosts = len(network)
-    total_ports = len(peer.ports())
+    total_ports = len(server.ports())
     net.LOGGER.debug(
         "Calculated network sweep: {0} hosts X {1} ports = {2} pings".format(
             total_hosts, total_ports, total_hosts * total_ports
