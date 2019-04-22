@@ -54,7 +54,7 @@ setup(
     include_package_data=True,
     keywords='app-net',
     name='app-net',
-    packages=find_packages(include=['net']),
+    packages=find_packages(include=['net', 'net.connections', 'net.defaults', 'net.peer']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
